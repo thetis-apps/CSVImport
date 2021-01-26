@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: CSVImport
+Transform:
+- AWS::Serverless-2016-10-31
+Parameters:
+  SubscriberId:
+    Type: String
+    Description: Subscriber that this application is handling events for.
+    MinLength: '1'
+  ClientId:
+    Description: Key of the parameter that has your Thetis client id as its value.
+    Type: AWS::SSM::Parameter::Value<String>
+  ClientSecret:
+    Description: Key of the parameter that has your Thetis client secret as its value.
+    Type: AWS::SSM::Parameter::Value<String>
+  ApiKey:
+    Description: The api key that gives access to the context in Thetis IMS.
+    Type: String
+    MinLength: 1
+  DevOpsEmail:
+    Description: The email address to send mail to when messages in the dead letter
+      queue.
+    Type: String
+    MinLength: 4
+Resources:
+  FileAttachedEventHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Function that runs when a CSV file is attached.
+      Runtime: nodejs12.x
+      Handler: src/handlers/csv-import.fileAttachedEventHandler
+      Environment:
+        Variables:
+          ClientId:
+            Ref: ClientId
+          ClientSecret:
+            Ref: ClientSecret
+          ApiKey:
+            Ref: ApiKey
+      Events:
+        Request:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source:
+              - public.thetis-ims.com
+              detail-type:
+              - fileAttached
+              detail:
+                entityName:
+                - Metadata
+                subscriberId:
+                - Ref: SubscriberId
+      MemorySize: 128
+      Timeout: 100
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn:
+          Fn::GetAtt:
+          - DeadLetterQueue
+          - Arn
+      CodeUri: FileAttachedEventHandler
+  DeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties: {}
+  Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Alarm when any message is moved to the dead letter queue.
+      AlarmActions:
+      - Ref: IncidentTopic
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: 1
+      MetricName: ApproximateNumberOfMessagesVisible
+      Period: 60
+      Namespace: AWS/SQS
+      Threshold: '0'
+      Unit: Count
+      Dimensions:
+      - Name: QueueName
+        Value:
+          Fn::GetAtt:
+          - DeadLetterQueue
+          - QueueName
+      TreatMissingData: notBreaching
+      Statistic: Maximum
+  IncidentTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+      - Endpoint:
+          Ref: DevOpsEmail
+        Protocol: email
+      DisplayName: Incidents to be handled by Thetis Devops.

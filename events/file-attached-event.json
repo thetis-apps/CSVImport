@@ -1,0 +1,25 @@
+{
+    "version": "0",
+    "id": "2b0e139a-8dc8-91fc-3c36-27700c27058c",
+    "detail-type": "fileAttached",
+    "source": "public.thetis-ims.com",
+    "account": "170069103691",
+    "time": "2021-01-13T09:42:51Z",
+    "region": "eu-west-1",
+    "resources": [],
+    "detail": {
+        "eventId": "65d23616-ffcf-4e20-b1f4-cac5b5c04fbc",
+        "fileName": "PoloFoxySilver.csv",
+        "data": {
+            "id": 1596,
+            "resourceName": "globalTradeItems",
+            "contextId": 550,
+            "dataDocument": "{\"CSVImport\": {\"Quote\": \"\\\"\", \"Escape\": \"\\\\\", \"Header\": [\"stockKeepingUnit\", \"globalTradeItemNumber\", \"productNumber\", \"numUnitsContained\", \"productVariantKey.color\", \"productVariantKey.material\", \"weight\", \"volume\"], \"Encoding\": \"UTF-8\", \"Delimiter\": \",\", \"QuoteMode\": \"NON_NUMERIC\", \"NullString\": \"null\", \"RecordSeparator\": \"\\r\\n\", \"IgnoreEmptyLines\": true, \"SkipHeaderRecord\": true, \"IgnoreSurroundingSpaces\": true}, \"SomeOtherServerlessApplication\": {}}"
+        },
+        "entityName": "Metadata",
+        "subscriberId": "379",
+        "eventType": "fileAttached",
+        "userId": 32935249,
+        "url": "https://thetis-ims-attachments.s3.eu-west-1.amazonaws.com/Metadata/1596/PoloFoxySilver.csv?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20210113T094251Z&X-Amz-SignedHeaders=host&X-Amz-Expires=300&X-Amz-Credential=AKIAIWNCZV6LIZYW27RQ%2F20210113%2Feu-west-1%2Fs3%2Faws4_request&X-Amz-Signature=63fc7682605ae808689d4fd5737b59afc1fbe5bafe5d49c7d6e611fe49fa5f2e"
+    }
+}
