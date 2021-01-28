@@ -2,6 +2,10 @@ const axios = require('axios');
 
 const csvParser = require('csv-parser');
 
+const stripBom = require('strip-bom-stream');
+
+var iconv = require('iconv-lite');
+
 var AWS = require('aws-sdk');
 AWS.config.update({region:'eu-west-1'});
 
@@ -45,10 +49,10 @@ async function getIMS() {
 	return ims;
 }
 
-const parse = (inputStream, options) => {
+const parse = (inputStream, setup) => {
     return new Promise((resolve, reject) => {
             let results = [];
-            inputStream.pipe(csvParser(options))
+            inputStream.pipe(stripBom()).pipe(iconv.decodeStream(setup.encoding)).pipe(csvParser(setup.options))
             .on('data', (data) => {
                 console.log("data " + JSON.stringify(data));
                 results.push(data);
@@ -73,8 +77,23 @@ exports.fileAttachedEventHandler = async (event, context) => {
     
     let dataDocument = JSON.parse(detail.data.dataDocument);
     
-    let options = dataDocument.CSVImport;
-
+    let setups = dataDocument.CSVImport;
+    let found = false;
+    let i = 0;
+    while (i < setups.length && !found) {
+        if (detail.fileName.match(setups[i].fileNamePattern)) {
+            found = true;
+        } else {
+            i++;
+        }
+    }
+    if (!found) {
+        return "SKIP";
+    }
+    
+    let setup = setups[i];
+    let options = setup.options;
+    
     console.log(JSON.stringify(options));
 
     let ims = await getIMS();
@@ -85,7 +104,7 @@ exports.fileAttachedEventHandler = async (event, context) => {
     
     console.log("Got stream");
     
-    let results = await parse(response.data, options);  
+    let results = await parse(response.data, setup);  
     
     console.log("Got result " + JSON.stringify(results));
     
