@@ -32,7 +32,10 @@ async function getIMS() {
     
     var ims = axios.create({
     		baseURL: apiUrl,
-    		headers: { "Authorization": token, "x-api-key": apiKey, "Content-Type": "application/json" }
+    		headers: { "Authorization": token, "x-api-key": apiKey, "Content-Type": "application/json" },
+    	    validateStatus: function (status) {
+		            return status >= 200 && status < 300 || status == 422; 
+		        }
     	});
 	
 	ims.interceptors.response.use(function (response) {
@@ -64,6 +67,14 @@ const parse = (inputStream, setup) => {
     });
 };
 
+async function error(ims, eventId, data, lineNumber) {
+	let message = new Object();
+	message.time = Date.now();
+	message.source = "CSVImport";
+	message.messageType = data.messageType;
+	message.messageText = "Line " + lineNumber + ": " + data.messageText;
+	await ims.post("events/" + eventId + "/messages", message);
+}
 
 /**
  * A Lambda function that logs the payload received from a CloudWatch scheduled event.
@@ -109,8 +120,94 @@ exports.fileAttachedEventHandler = async (event, context) => {
     console.log("Got result " + JSON.stringify(results));
     
     for (let i = 0; i < results.length; i++) {
+        
         let data = results[i];
-        await ims.post(resourceName, data);
+        
+        // Empty string is null
+        
+        for (const fn in data) {
+            if (data[fn] == "") {
+                data[fn] = null;
+            }
+         }
+
+        // If trade items: Create product as well if not already existing
+        
+        if (resourceName == 'globalTradeItems') {
+          
+            response = await ims.post("products", data);
+            if (response.status == 422) {
+                if (response.data.messageCode != "duplicate_Product") {
+                    error(ims, detail.eventId, response.data, i);
+                }
+            }
+            
+            let dimensions = new Object();
+            let productVariantKey = new Object();
+            for (const qfn in data) {
+                let tokens = qfn.split(".");
+                if (tokens.length == 2) {
+                    let fn = tokens[1];
+                    if (tokens[0] == 'productVariantKey') {
+                        productVariantKey[fn] = data[qfn];
+                    } else if (tokens[0] == 'dimensions') {
+                        dimensions[fn] = data[qfn];
+                    }
+                    delete data[qfn];
+                }
+            } 
+            data.productVariantKey = productVariantKey;
+            data.dimensions = dimensions;
+            
+        }
+        
+        // If shipment lines: Create shipment as well if not already existing
+        
+        if (resourceName == 'shipmentLines') {
+            
+            let deliveryAddress = new Object();
+            let contactPerson = new Object();
+            for (const qfn in data) {
+                let tokens = qfn.split(".");
+                if (tokens.length == 2) {
+                    let fn = tokens[1];
+                    if (tokens[0] == 'deliveryAddress') {
+                        deliveryAddress[fn] = data[qfn];
+                    } else if (tokens[0] == 'contactPerson') {
+                        contactPerson[fn] = data[qfn];
+                    }
+                    delete data[qfn];
+                }
+            } 
+            data.deliveryAddress = deliveryAddress;
+            data.contactPerson = contactPerson;
+
+            response = await ims.post("shipments", data);
+            if (response.status == 422) {
+                if (response.data.messageCode != "duplicate_Shipment") {
+                    error(ims, detail.eventId, response.data, i);
+                }
+            }
+        }
+
+        // If inbound shipment lines: Create inbouns shipment as well if not already existing
+        
+        if (resourceName == 'inboundShipmentLines') {
+            let inboundShipment = new Object();
+            inboundShipment.inboundShipmentNumber = data.inboundShipmentNumber;
+            inboundShipment.supplierNumber = data.supplierNumber;
+            response = await ims.post("inboundShipments", inboundShipment);
+            if (response.status == 422) {
+                if (response.data.messageCode != "duplicate_InboundShipment") {
+                    error(ims, detail.eventId, response.data, i);
+                }
+            }
+        }
+        
+        response = await ims.post(resourceName, data);
+        if (response.status == 422) {
+            error(ims, detail.eventId, response.data, i);
+        }
     }
 
 }
