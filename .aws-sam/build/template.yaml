@@ -1,12 +1,11 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: CSVImport
+Description: Application for the import of CSV files to Thetis IMS
 Transform:
 - AWS::Serverless-2016-10-31
 Parameters:
-  SubscriberId:
+  ContextId:
     Type: String
-    Description: Subscriber that this application is handling events for.
-    MinLength: '1'
+    Description: Context that this application is handling events for.
   ClientId:
     Description: Key of the parameter that has your Thetis client id as its value.
     Type: AWS::SSM::Parameter::Value<String>
@@ -23,20 +22,22 @@ Parameters:
     Type: String
     MinLength: 4
 Resources:
+  DispatchQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 300
   FileAttachedEventHandler:
     Type: AWS::Serverless::Function
     Properties:
       Description: Function that runs when a CSV file is attached.
       Runtime: nodejs12.x
       Handler: src/handlers/csv-import.fileAttachedEventHandler
+      Policies:
+      - AmazonSQSFullAccess
       Environment:
         Variables:
-          ClientId:
-            Ref: ClientId
-          ClientSecret:
-            Ref: ClientSecret
-          ApiKey:
-            Ref: ApiKey
+          DispatchQueue:
+            Ref: DispatchQueue
       Events:
         Request:
           Type: EventBridgeRule
@@ -49,10 +50,10 @@ Resources:
               detail:
                 entityName:
                 - Metadata
-                subscriberId:
-                - Ref: SubscriberId
-      MemorySize: 128
-      Timeout: 100
+                contextId:
+                - Ref: ContextId
+      MemorySize: 2048
+      Timeout: 300
       DeadLetterQueue:
         Type: SQS
         TargetArn:
@@ -60,6 +61,42 @@ Resources:
           - DeadLetterQueue
           - Arn
       CodeUri: FileAttachedEventHandler
+  Writer:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Function POST data to Thetis IMS.
+      Runtime: nodejs12.x
+      Handler: src/handlers/csv-import.writer
+      Environment:
+        Variables:
+          ClientId:
+            Ref: ClientId
+          ClientSecret:
+            Ref: ClientSecret
+          ApiKey:
+            Ref: ApiKey
+          DispatchQueue:
+            Ref: DispatchQueue
+      Events:
+        Request:
+          Type: SQS
+          Properties:
+            BatchSize: 10
+            MaximumBatchingWindowInSeconds: 10
+            Queue:
+              Fn::GetAtt:
+              - DispatchQueue
+              - Arn
+      MemorySize: 256
+      Timeout: 300
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn:
+          Fn::GetAtt:
+          - DeadLetterQueue
+          - Arn
+      ReservedConcurrentExecutions: 5
+      CodeUri: Writer
   DeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties: {}

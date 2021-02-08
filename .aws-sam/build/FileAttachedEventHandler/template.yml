@@ -1,23 +1,13 @@
-# This is the SAM template that represents the architecture of your serverless application
-# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
-
-# The AWSTemplateFormatVersion identifies the capabilities of the template
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
 AWSTemplateFormatVersion: 2010-09-09
-Description: >-
-  CSVImport
-
-# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Description: Application for the import of CSV files to Thetis IMS
 Transform:
 - AWS::Serverless-2016-10-31
 
 # Parameters of the application 
 Parameters:
-  SubscriberId:
+  ContextId:
     Type: String
-    Description: Subscriber that this application is handling events for.
-    MinLength: '1'
+    Description: Context that this application is handling events for.
   ClientId:
     Description: Key of the parameter that has your Thetis client id as its value.
     Type: AWS::SSM::Parameter::Value<String>
@@ -33,26 +23,25 @@ Parameters:
     Type: String
     MinLength: 4
     
-# Resources declares the AWS resources that you want to include in the stack
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:  
-  # This is the Lambda function definition associated with the source code: sqs-payload-logger.js. For all available properties, see
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
+  DispatchQueue: 
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 300
+      
   FileAttachedEventHandler:
     Type: AWS::Serverless::Function
     Properties:
       Description: Function that runs when a CSV file is attached.
       Runtime: nodejs12.x
       Handler: src/handlers/csv-import.fileAttachedEventHandler
+      Policies:
+      - AmazonSQSFullAccess
       Environment:
         Variables:
-          ClientId:
-            Ref: ClientId
-          ClientSecret:
-            Ref: ClientSecret
-          ApiKey:
-            Ref: ApiKey
+          DispatchQueue:
+            Ref: DispatchQueue
       Events:
         Request:
           Type: EventBridgeRule
@@ -65,16 +54,52 @@ Resources:
               detail:
                 entityName:
                 - Metadata
-                subscriberId:
-                - Ref: SubscriberId
-      MemorySize: 128
-      Timeout: 100
+                contextId:
+                - Ref: ContextId
+      MemorySize: 2048
+      Timeout: 300
       DeadLetterQueue:
         Type: SQS
         TargetArn:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
+          
+  Writer:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Function POST data to Thetis IMS.
+      Runtime: nodejs12.x
+      Handler: src/handlers/csv-import.writer
+      Environment:
+        Variables:
+          ClientId:
+            Ref: ClientId
+          ClientSecret:
+            Ref: ClientSecret
+          ApiKey:
+            Ref: ApiKey
+          DispatchQueue:
+            Ref: DispatchQueue
+      Events:
+        Request:
+          Type: SQS
+          Properties:
+            BatchSize: 10
+            MaximumBatchingWindowInSeconds: 10
+            Queue: 
+              Fn::GetAtt:
+              - DispatchQueue
+              - Arn
+      MemorySize: 256
+      Timeout: 300
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn:
+          Fn::GetAtt:
+          - DeadLetterQueue
+          - Arn
+      ReservedConcurrentExecutions: 5
 
   # Our standard monitoring setup      
   DeadLetterQueue:
