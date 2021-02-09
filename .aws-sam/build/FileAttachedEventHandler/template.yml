@@ -3,6 +3,20 @@ Description: Application for the import of CSV files to Thetis IMS
 Transform:
 - AWS::Serverless-2016-10-31
 
+# Metadata to use for the publishing to the SAR
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: thetis-ims-csv-import
+    Description: Application for import of CSV files to Thetis IMS
+    Author: thetis-apps
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: LICENSE.txt
+    ReadmeUrl: README.md
+    Labels: ['thetis-ims']
+    HomePageUrl: https://github.com/thetis-apps/CSVImport
+    SemanticVersion: 0.0.1
+    SourceCodeUrl: https://github.com/thetis-apps/CSVImport
+
 # Parameters of the application 
 Parameters:
   ContextId:
@@ -11,9 +25,11 @@ Parameters:
   ClientId:
     Description: Key of the parameter that has your Thetis client id as its value.
     Type: AWS::SSM::Parameter::Value<String>
+    Default: ThetisClientId
   ClientSecret:
     Description: Key of the parameter that has your Thetis client secret as its value.
     Type: AWS::SSM::Parameter::Value<String>
+    Default: ThetisClientSecret
   ApiKey:
     Description: The api key that gives access to the context in Thetis IMS.
     Type: String
