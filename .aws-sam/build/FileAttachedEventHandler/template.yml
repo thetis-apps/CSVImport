@@ -14,7 +14,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: ['thetis-ims']
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: 0.0.1
+    SemanticVersion: 0.0.2
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 
 # Parameters of the application 
@@ -56,6 +56,12 @@ Resources:
       - AmazonSQSFullAccess
       Environment:
         Variables:
+          ClientId:
+            Ref: ClientId
+          ClientSecret:
+            Ref: ClientSecret
+          ApiKey:
+            Ref: ApiKey
           DispatchQueue:
             Ref: DispatchQueue
       Events:
@@ -68,8 +74,6 @@ Resources:
               detail-type:
               - fileAttached
               detail:
-                entityName:
-                - Metadata
                 contextId:
                 - Ref: ContextId
       MemorySize: 2048

@@ -90,20 +90,25 @@ async function sendSqs(chunk) {
 /**
  * A Lambda function that logs the payload received from a CloudWatch scheduled event.
  */
-exports.fileAttachedEventHandler = async (event, context) => {
+exports.fileAttachedEventHandler = async (event, x) => {
     
     let detail = event.detail;
     let presignedUrl = detail.url;
+    let entityName = detail.entityName;
+    let fileName = detail.fileName;
     
-    let resourceName = detail.data.resourceName;
+    let ims = await getIMS();
     
-    let dataDocument = JSON.parse(detail.data.dataDocument);
+    let response = await ims.get("contexts/" + detail.contextId);
+    let context = response.data;
+    let dataDocument = JSON.parse(context.dataDocument);
     
     let setups = dataDocument.CSVImport;
     let found = false;
     let i = 0;
     while (i < setups.length && !found) {
-        if (detail.fileName.match(setups[i].fileNamePattern)) {
+        let setup = setups[i];
+        if (entityName == setup.entityName && fileName.match(setup.fileNamePattern)) {
             found = true;
         } else {
             i++;
@@ -115,10 +120,11 @@ exports.fileAttachedEventHandler = async (event, context) => {
     
     let setup = setups[i];
     let options = setup.options;
-    
+    let resourceName = setup.resourceName;
+
     console.log(JSON.stringify(options));
 
-    let response = await axios.get(presignedUrl, { responseType: 'stream' });
+    response = await axios.get(presignedUrl, { responseType: 'stream' });
     
     console.log("Got stream");
     
@@ -138,7 +144,21 @@ exports.fileAttachedEventHandler = async (event, context) => {
         metadata.lineNumber = i;
         metadata.resourceName = resourceName;
         metadata.eventId = detail.eventId;
-        data.metadata = metadata;        
+        data.metadata = metadata;       
+        
+        // Further enrichment
+        
+        if (typeof setup.enrichment !== 'undefined') {
+            for (let fn in setup.enrichment) {
+                let value = setup.enrichment[fn];
+                if (value.startsWith("$")) {
+                    value = detail.data[value.substring(1)];   
+                } else {
+                    value = setup.enrichment[fn];
+                }
+                data[fn] = value;
+            }
+        }
         
         chunk.push(data);
         
@@ -173,6 +193,9 @@ exports.writer = async (event, x) => {
         let results = JSON.parse(record.body);
         for (let j = 0; j < results.length; j++) {
             let data = results[j];
+            
+            console.log(JSON.stringify(data));
+    
             let metadata = data.metadata;
             
             // Empty string is null
