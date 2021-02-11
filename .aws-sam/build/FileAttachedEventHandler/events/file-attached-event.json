@@ -1,25 +1,70 @@
 {
     "version": "0",
-    "id": "2b0e139a-8dc8-91fc-3c36-27700c27058c",
+    "id": "4c5fb4f6-2227-1a44-7af3-e08574622044",
     "detail-type": "fileAttached",
     "source": "public.thetis-ims.com",
     "account": "170069103691",
-    "time": "2021-01-13T09:42:51Z",
+    "time": "2021-02-11T07:50:29Z",
     "region": "eu-west-1",
     "resources": [],
     "detail": {
-        "eventId": "65d23616-ffcf-4e20-b1f4-cac5b5c04fbc",
-        "fileName": "PoloFoxySilver.csv",
+        "eventId": "fdbf81ed-dbe6-4348-8b65-458466ace6ee",
+        "fileName": "PoloFoxySilver.xlsx",
         "data": {
-            "id": 1596,
-            "resourceName": "globalTradeItems",
-            "contextId": 550,
-            "dataDocument": "{\"CSVImport\": {\"Quote\": \"\\\"\", \"Escape\": \"\\\\\", \"Header\": [\"stockKeepingUnit\", \"globalTradeItemNumber\", \"productNumber\", \"numUnitsContained\", \"productVariantKey.color\", \"productVariantKey.material\", \"weight\", \"volume\"], \"Encoding\": \"UTF-8\", \"Delimiter\": \",\", \"QuoteMode\": \"NON_NUMERIC\", \"NullString\": \"null\", \"RecordSeparator\": \"\\r\\n\", \"IgnoreEmptyLines\": true, \"SkipHeaderRecord\": true, \"IgnoreSurroundingSpaces\": true}, \"SomeOtherServerlessApplication\": {}}"
+            "id": 550,
+            "contextName": "Område 1",
+            "baseCurrencyCode": "BAM",
+            "reservationSetup": {
+                "writeDownWhenShipmentOnHold": true,
+                "writeDownWhenShipmentLineAbandoned": true
+            },
+            "quickShipSetup": {
+                "printMultiPickingList": false,
+                "printPickingList": true,
+                "printDeliveryNote": true
+            },
+            "globalTradeItemNumberSequence": null,
+            "address": {
+                "addressee": "Thetis Webshop",
+                "careOf": null,
+                "streetNameAndNumber": "Engelsholmvej 26",
+                "floorBlockOrSuite": "dfdf",
+                "districtOrCityArea": null,
+                "cityTownOrVillage": "Randers SV",
+                "stateOrProvince": null,
+                "postalCode": "8940",
+                "countryCode": "DK",
+                "countryName": null
+            },
+            "contactPerson": {
+                "name": "f"
+            },
+            "subscriberId": 379,
+            "globalLocationNumber": null,
+            "pickingListReportId": 32935252,
+            "deliveryNoteReportId": 32935254,
+            "consignmentNoteReportId": 32935251,
+            "multiPickingListReportId": 32935253,
+            "stockTakingListReportId": 32935262,
+            "adjustmentListReportId": 32935263,
+            "goodsReceiptReportId": 32935261,
+            "costOfSalesListReportId": 32935250,
+            "costVarianceListReportId": null,
+            "nextShipmentNumber": 12,
+            "nextInboundShipmentNumber": 9,
+            "nextStockTakingNumber": 4,
+            "nextReturnShipmentNumber": 4,
+            "active": true,
+            "vatNumber": "Pulimut1",
+            "defaultLotStatusOnArrival": "SALEABLE",
+            "dataDocument": "{\"CSVImport\": [{\"options\": {\"headers\": [\"productNumber\", \"productName\", \"productUnit\", \"productGroupName\", \"globalTradeItemNumber\", \"stockKeepingUnit\", \"numUnitsContained\", \"productVariantKey.color\", \"productVariantKey.size\", \"productVariantKey.material\", \"productVariantKey.packagingType\", \"productVariantKey.description\", \"dimensions.height\", \"dimensions.width\", \"dimensions.length\", \"filler\", \"filler\", \"weight\", \"volume\", \"supplierNumber\", \"filler\", \"locationNumber\", \"reorderLevel\", \"numItemsToOrder\", \"orderUpToLevel\", \"season\", \"productLine\", \"brand\", \"design\", \"harmonizedSystemCode\", \"ingredients\", \"instructions\", \"durability\", \"filler\", \"standardCostPrice\", \"zoneName\"], \"separator\": \";\", \"skipLines\": 1}, \"encoding\": \"UTF-8\", \"enrichment\": {\"pickFrom\": \"ANY_LOC\", \"contextName\": \"$contextName\"}, \"entityName\": \"Context\", \"resourceName\": \"globalTradeItems\", \"fileNamePattern\": \".*\\\\.*\"}]}",
+            "contextId": 550
         },
-        "entityName": "Metadata",
+        "entityName": "Context",
         "subscriberId": "379",
+        "contextId": "550",
         "eventType": "fileAttached",
         "userId": 32935249,
-        "url": "https://thetis-ims-attachments.s3.eu-west-1.amazonaws.com/Metadata/1596/PoloFoxySilver.csv?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20210113T094251Z&X-Amz-SignedHeaders=host&X-Amz-Expires=300&X-Amz-Credential=AKIAIWNCZV6LIZYW27RQ%2F20210113%2Feu-west-1%2Fs3%2Faws4_request&X-Amz-Signature=63fc7682605ae808689d4fd5737b59afc1fbe5bafe5d49c7d6e611fe49fa5f2e"
+        "url": "https://thetis-apps-public.s3-eu-west-1.amazonaws.com/PoloFoxySilver.xlsx"
     }
 }

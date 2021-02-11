@@ -6,6 +6,8 @@ const stripBom = require('strip-bom-stream');
 
 var iconv = require('iconv-lite');
 
+var XLSX = require('xlsx');
+
 var AWS = require('aws-sdk');
 AWS.config.update({region:'eu-west-1'});
 
@@ -117,18 +119,30 @@ exports.fileAttachedEventHandler = async (event, x) => {
     if (!found) {
         return "SKIP";
     }
-    
+
     let setup = setups[i];
     let options = setup.options;
     let resourceName = setup.resourceName;
 
     console.log(JSON.stringify(options));
 
-    response = await axios.get(presignedUrl, { responseType: 'stream' });
+    // Create stream - either from converted XLSX file or directly from CSV file
+
+    let stream;
+    if (fileName.endsWith('xls') || fileName.endsWith('xlsx') ) {
+        response = await axios.get(presignedUrl, { responseType: 'arraybuffer' });
+        let workbook = XLSX.read(response.data, { type:"buffer" });
+        let firstSheetName = workbook.SheetNames[0];
+        let worksheet = workbook.Sheets[firstSheetName];
+        stream = XLSX.stream.to_csv(worksheet);
+    } else {
+        response = await axios.get(presignedUrl, { responseType: 'stream' });
+        stream = response.data;
+    }
     
     console.log("Got stream");
     
-    let results = await parse(response.data, setup);  
+    let results = await parse(stream, setup);  
     
     console.log("Got result " + JSON.stringify(results));
 
@@ -238,7 +252,7 @@ exports.writer = async (event, x) => {
             
             // If shipment lines: Create shipment as well if not already existing
             
-            if (metadata.resourceName == 'shipmentLines') {
+            if (metadata.resourceName == 'shipments') {
                 
                 let deliveryAddress = new Object();
                 let contactPerson = new Object();
@@ -257,28 +271,8 @@ exports.writer = async (event, x) => {
                 data.deliveryAddress = deliveryAddress;
                 data.contactPerson = contactPerson;
     
-                let response = await ims.post("shipments", data);
-                if (response.status == 422) {
-                    if (response.data.messageCode != "duplicate_Shipment") {
-                        error(ims, metadata.eventId, response.data, metadata.lineNumber);
-                    }
-                }
             }
     
-            // If inbound shipment lines: Create inbouns shipment as well if not already existing
-            
-            if (metadata.resourceName == 'inboundShipmentLines') {
-                let inboundShipment = new Object();
-                inboundShipment.inboundShipmentNumber = data.inboundShipmentNumber;
-                inboundShipment.supplierNumber = data.supplierNumber;
-                let response = await ims.post("inboundShipments", inboundShipment);
-                if (response.status == 422) {
-                    if (response.data.messageCode != "duplicate_InboundShipment") {
-                        error(ims, metadata.eventId, response.data, metadata.lineNumber);
-                    }
-                }
-            }
-            
             let response = await ims.post(metadata.resourceName, data);
             if (response.status == 422) {
                 error(ims, metadata.eventId, response.data, metadata.lineNumber);

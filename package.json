@@ -8,7 +8,8 @@
         "csv-parser": "^3.0.0",
         "iconv-lite": "^0.6.2",
         "neat-csv": "^6.0.1",
-        "strip-bom-stream": "^4.0.0"
+        "strip-bom-stream": "^4.0.0",
+        "xlsx": "^0.16.9"
     },
     "devDependencies": {
         "aws-sdk": "^2.831.0",

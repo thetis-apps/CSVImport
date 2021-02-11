@@ -13,7 +13,7 @@ Metadata:
     Labels:
     - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: '0.0.2'
+    SemanticVersion: '0.0.4'
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 Parameters:
   ContextId:

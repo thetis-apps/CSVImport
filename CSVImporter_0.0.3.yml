@@ -13,7 +13,7 @@ Metadata:
     Labels:
     - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: '0.0.2'
+    SemanticVersion: '0.0.3'
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 Parameters:
   ContextId:
@@ -79,7 +79,7 @@ Resources:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/33c2892f028cadb414d3956f9d577b7f
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/4f62453af146859ef3d2326b4b4095fe
   Writer:
     Type: AWS::Serverless::Function
     Properties:
@@ -115,7 +115,7 @@ Resources:
           - DeadLetterQueue
           - Arn
       ReservedConcurrentExecutions: 5
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/33c2892f028cadb414d3956f9d577b7f
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/4f62453af146859ef3d2326b4b4095fe
   DeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties: {}
