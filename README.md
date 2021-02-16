@@ -4,9 +4,13 @@ Wraps csv-parser.
 
 https://www.npmjs.com/package/csv-parser
 
+Files with extentions xls or xlsx are automatically converted to csv.
+
+
+
 # Configuration
 
-Metadata data document:
+Context data document:
 
 ```
 {
@@ -14,24 +18,47 @@ Metadata data document:
     {
       "options": {
         "headers": [
-          "productNumber",
-          "productName"
+          "filler",
+          "locationNumber",
+          "filler"
         ],
+        "separator": ";",
         "skipLines": 1
       },
       "encoding": "UTF-8",
-      "fileNamePattern": "Items.*\\.csv"
+      "enrichment": {
+        "locationType": "RACK"
+      },
+      "entityName": "Context",
+      "resourceName": "locations",
+      "fileNamePattern": ".*\\.csv"
     },
     {
       "options": {
-        "separator": ";"
+        "headers": [
+          "filler",
+          "filler",
+          "numItemsExpected",
+          "purchasePrice",
+          "filler",
+          "stockKeepingUnit"
+        ],
+        "separator": ",",
+        "skipLines": 1
       },
-      "encoding": "ISO-8859-1",
-      "fileNamePattern": "Varer.*\\.csv"
+      "encoding": "UTF-8",
+      "enrichment": {
+        "inboundShipmentNumber": "$inboundShipmentNumber"
+      },
+      "entityName": "InboundShipment",
+      "resourceName": "inboundShipmentLines",
+      "fileNamePattern": ".*\\.xls"
     }
   ]
 }
 ```
+
+#### options
 
 Options described here: https://www.npmjs.com/package/csv-parser
 
@@ -43,3 +70,18 @@ The encoding of the file.
 
 The application will only process files that have a name that matches this regular expression. 
 
+#### enrichment
+
+Possible to include values from fields of the entity the file was attached to.
+
+#### entityName
+
+The name of the entity that the file has been attached to.
+
+#### resourceName
+
+The name of the resource that the file contains records for.
+
+#### encoding
+
+The assummed encoding of the attached file.

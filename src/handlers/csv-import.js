@@ -250,7 +250,7 @@ exports.writer = async (event, x) => {
                 
             }
             
-            // If shipment lines: Create shipment as well if not already existing
+            // If shipments: Handle delivery address and contact person
             
             if (metadata.resourceName == 'shipments') {
                 
