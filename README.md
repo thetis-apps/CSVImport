@@ -6,11 +6,15 @@ https://www.npmjs.com/package/csv-parser
 
 Files with extentions xls or xlsx are automatically converted to csv.
 
+# Installation
 
+You can install this application from the Serverless Application Repository. The application is registered under the name thetis-ims-csv-import.
+
+## Parameters
 
 # Configuration
 
-Context data document:
+You configure the application through the data document of the context. Here is what a configuration may look like:
 
 ```
 {
@@ -58,9 +62,13 @@ Context data document:
 }
 ```
 
+The configuration consists of an array of objects. Each object describes a set of files and how to handle them.
+
+## Fileset configuration
+
 #### options
 
-Options described here: https://www.npmjs.com/package/csv-parser
+These are the options that are passed on to the csv-parser. They are described here: https://www.npmjs.com/package/csv-parser.
 
 #### encoding
 
@@ -68,11 +76,11 @@ The encoding of the file.
 
 #### fileNamePattern
 
-The application will only process files that have a name that matches this regular expression. 
+Files that have a name that matches this regular expression belongs to this fileset. 
 
 #### enrichment
 
-Possible to include values from fields of the entity the file was attached to.
+This map contains corresponding values of field name and value. The value may either be expressed as a constant or as a reference to a field in the entity that the file was attached to. 
 
 #### entityName
 
@@ -82,6 +90,4 @@ The name of the entity that the file has been attached to.
 
 The name of the resource that the file contains records for.
 
-#### encoding
 
-The assummed encoding of the attached file.
