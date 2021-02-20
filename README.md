@@ -1,10 +1,20 @@
 # Introduction
 
-Wraps csv-parser.
+This application listen for attachment of files. In Thetis IMS you can attach files to any piece of master data and to some pieces of transactional data as well. So, you can for instance attach files to your individual customers. When an attachment is made, an event is put on the event bus. The event object holds the piece of data the file was attached to - in this example the customer - and a URL to the file that was attached. You can read more about the event bus and the 'fileAttached' event in our integration manual.
+
+When a file is attached, the application will - if the file meets certain criterias - parse it as a CSV file and create new data in Thetis IMS based on the content of the file.
+
+# Third party modules
+
+This application uses the 'csv-parser' module.
 
 https://www.npmjs.com/package/csv-parser
 
-Files with extentions xls or xlsx are automatically converted to csv.
+Files with extentions xls or xlsx are automatically converted to csv. The application uses the 'xlsx' module for that purpose.
+
+Character set decoding is done with the 'iconv-lite' module.
+
+Byte order marks are automatically removed thanks to the 'strip-bom-stream' module.
 
 # Installation
 
