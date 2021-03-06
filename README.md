@@ -4,18 +4,6 @@ This application listen for attachment of files. In Thetis IMS you can attach fi
 
 When a file is attached, the application will - if the file meets certain criterias - parse it as a CSV file and create new data in Thetis IMS based on the content of the file.
 
-# Third party modules
-
-This application uses the 'csv-parser' module.
-
-https://www.npmjs.com/package/csv-parser
-
-Files with extentions xls or xlsx are automatically converted to csv. The application uses the 'xlsx' module for that purpose.
-
-Character set decoding is done with the 'iconv-lite' module.
-
-Byte order marks are automatically removed thanks to the 'strip-bom-stream' module.
-
 # Installation
 
 You can install this application from the Serverless Application Repository. The application is registered under the name thetis-ims-csv-import.
@@ -90,7 +78,7 @@ Files that have a name that matches this regular expression belongs to this file
 
 #### enrichment
 
-This map contains corresponding values of field name and value. The value may either be expressed as a constant or as a reference to a field in the entity that the file was attached to. 
+This map contains corresponding values of field name and value. The value may either be expressed as a constant or as a reference to a field in the entity that the file was attached to. To make a reference to a field in the entity the file was attached to write the name of the field with a dollar sign prefixed.
 
 #### entityName
 
@@ -100,4 +88,13 @@ The name of the entity that the file has been attached to.
 
 The name of the resource that the file contains records for.
 
+# Third party modules
+
+Files are parsed using the 'csv-parser' module.
+
+Files with extentions xls or xlsx are automatically converted to csv. The application uses the 'xlsx' module for that purpose.
+
+Character set decoding is done with the 'iconv-lite' module.
+
+Byte order marks are automatically removed thanks to the 'strip-bom-stream' module.
 
