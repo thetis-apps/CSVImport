@@ -113,21 +113,13 @@ The name of the entity that the file has been attached to.
 
 The name of the resource that the file contains records for.
 
-<<<<<<< HEAD
-# Third party modules
-
-Files are parsed using the 'csv-parser' module.
-=======
 # Error handling
 
 If the processing of an event fails, the event object is moved to the dead letter queue and an email is sent to the address provided on installation.
 
 # Third party modules
 
-This application uses the 'csv-parser' module.
-
-https://www.npmjs.com/package/csv-parser
->>>>>>> dd3fe6f8a9e9f6b8fc6133e0a348141188a9b765
+Files are parsed using the 'csv-parser' module.
 
 Files with extentions xls or xlsx are automatically converted to csv. The application uses the 'xlsx' module for that purpose.
 
