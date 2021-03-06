@@ -5,10 +5,35 @@ This application listen for attachment of files. In Thetis IMS you can attach fi
 When a file is attached, the application will - if the file meets certain criterias - parse it as a CSV file and create new data in Thetis IMS based on the content of the file.
 
 # Installation
+<<<<<<< HEAD
+=======
 
 You can install this application from the Serverless Application Repository. The application is registered under the name thetis-ims-csv-import.
 
 ## Parameters
+
+When installing the application you must provide a few parameters.
+
+#### ContextId
+
+The unique numerical identification of the context (area) within which this instance of the application should listen for events.
+
+#### ApiKey
+>>>>>>> dd3fe6f8a9e9f6b8fc6133e0a348141188a9b765
+
+The key that gives access to the context within Thetis IMS.
+
+#### ClientId
+
+The name of a parameter in the Parameter Store of your AWS account that has your Thetis IMS client id as its value. The default name of the parameter is 'ThetisClientId', and we generally recommend using this name.
+
+#### ClientSecret
+
+The name of a parameter in the Parameter Store of your AWS account that has your Thetis IMS client secret as its secret. The default name of the parameter is 'ThetisClientSecret', and we generally recommend using this name.
+
+#### DevOpsMail
+
+The address to mail when the processing of an event fails.
 
 # Configuration
 
@@ -88,9 +113,21 @@ The name of the entity that the file has been attached to.
 
 The name of the resource that the file contains records for.
 
+<<<<<<< HEAD
 # Third party modules
 
 Files are parsed using the 'csv-parser' module.
+=======
+# Error handling
+
+If the processing of an event fails, the event object is moved to the dead letter queue and an email is sent to the address provided on installation.
+
+# Third party modules
+
+This application uses the 'csv-parser' module.
+
+https://www.npmjs.com/package/csv-parser
+>>>>>>> dd3fe6f8a9e9f6b8fc6133e0a348141188a9b765
 
 Files with extentions xls or xlsx are automatically converted to csv. The application uses the 'xlsx' module for that purpose.
 
