@@ -26,7 +26,7 @@ The name of a parameter in the Parameter Store of your AWS account that has your
 
 #### ClientSecret
 
-The name of a parameter in the Parameter Store of your AWS account that has your Thetis IMS client secret as its secret. The default name of the parameter is 'ThetisClientSecret', and we generally recommend using this name.
+The name of a parameter in the Parameter Store of your AWS account that has your Thetis IMS client secret as its value. The default name of the parameter is 'ThetisClientSecret', and we generally recommend using this name.
 
 #### DevOpsMail
 
