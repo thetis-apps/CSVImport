@@ -8,12 +8,12 @@ Metadata:
     Description: Application for import of CSV files to Thetis IMS
     Author: thetis-apps
     SpdxLicenseId: Apache-2.0
-    LicenseUrl: ../../LICENSE.txt
-    ReadmeUrl: ../../README.md
+    LicenseUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/4612b8d5aa75b9b9936c9b7b9e6c7e82
+    ReadmeUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/7d2c617cfceca2894307a4d747c0d418
     Labels:
     - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: 1.0.2
+    SemanticVersion: 1.0.1
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 Parameters:
   ContextId:
@@ -40,13 +40,13 @@ Resources:
   DispatchQueue:
     Type: AWS::SQS::Queue
     Properties:
-      VisibilityTimeout: 360
+      VisibilityTimeout: 300
       RedrivePolicy:
         deadLetterTargetArn:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-        maxReceiveCount: 3
+        maxReceiveCount: 1
   FileAttachedEventHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -78,14 +78,14 @@ Resources:
                 contextId:
                 - Ref: ContextId
       MemorySize: 2048
-      Timeout: 60
+      Timeout: 300
       DeadLetterQueue:
         Type: SQS
         TargetArn:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-      CodeUri: FileAttachedEventHandler
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/13937a97153c096d8ceb5f908f1aed8d
   Writer:
     Type: AWS::Serverless::Function
     Properties:
@@ -115,7 +115,7 @@ Resources:
       MemorySize: 256
       Timeout: 300
       ReservedConcurrentExecutions: 10
-      CodeUri: Writer
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/13937a97153c096d8ceb5f908f1aed8d
   DeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties: {}

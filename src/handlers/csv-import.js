@@ -200,7 +200,7 @@ exports.writer = async (event, x) => {
     
     let records = event.Records;
     for (let i = 0; i < records.length; i++) {
-        let record = records[0];
+        let record = records[i];
         
         // For each line read from a file
         

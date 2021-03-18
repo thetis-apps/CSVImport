@@ -8,12 +8,12 @@ Metadata:
     Description: Application for import of CSV files to Thetis IMS
     Author: thetis-apps
     SpdxLicenseId: Apache-2.0
-    LicenseUrl: ../../LICENSE.txt
-    ReadmeUrl: ../../README.md
+    LicenseUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/4612b8d5aa75b9b9936c9b7b9e6c7e82
+    ReadmeUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/7d2c617cfceca2894307a4d747c0d418
     Labels:
     - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: 1.0.2
+    SemanticVersion: 1.0.0
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 Parameters:
   ContextId:
@@ -40,13 +40,7 @@ Resources:
   DispatchQueue:
     Type: AWS::SQS::Queue
     Properties:
-      VisibilityTimeout: 360
-      RedrivePolicy:
-        deadLetterTargetArn:
-          Fn::GetAtt:
-          - DeadLetterQueue
-          - Arn
-        maxReceiveCount: 3
+      VisibilityTimeout: 300
   FileAttachedEventHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -78,14 +72,14 @@ Resources:
                 contextId:
                 - Ref: ContextId
       MemorySize: 2048
-      Timeout: 60
+      Timeout: 300
       DeadLetterQueue:
         Type: SQS
         TargetArn:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-      CodeUri: FileAttachedEventHandler
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/03f23642f9003f5f49447f26cb5770a5
   Writer:
     Type: AWS::Serverless::Function
     Properties:
@@ -114,8 +108,14 @@ Resources:
               - Arn
       MemorySize: 256
       Timeout: 300
-      ReservedConcurrentExecutions: 10
-      CodeUri: Writer
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn:
+          Fn::GetAtt:
+          - DeadLetterQueue
+          - Arn
+      ReservedConcurrentExecutions: 5
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/03f23642f9003f5f49447f26cb5770a5
   DeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties: {}

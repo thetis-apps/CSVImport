@@ -8,8 +8,8 @@ Metadata:
     Description: Application for import of CSV files to Thetis IMS
     Author: thetis-apps
     SpdxLicenseId: Apache-2.0
-    LicenseUrl: ../../LICENSE.txt
-    ReadmeUrl: ../../README.md
+    LicenseUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/4612b8d5aa75b9b9936c9b7b9e6c7e82
+    ReadmeUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/7d2c617cfceca2894307a4d747c0d418
     Labels:
     - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
@@ -85,7 +85,7 @@ Resources:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-      CodeUri: FileAttachedEventHandler
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/29ede643fae53f9d249c2434979c91c3
   Writer:
     Type: AWS::Serverless::Function
     Properties:
@@ -115,7 +115,7 @@ Resources:
       MemorySize: 256
       Timeout: 300
       ReservedConcurrentExecutions: 10
-      CodeUri: Writer
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/29ede643fae53f9d249c2434979c91c3
   DeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties: {}
