@@ -90,6 +90,8 @@ The configuration consists of an array of objects. Each object describes a set o
 
 These are the options that are passed on to the csv-parser. They are described here: https://www.npmjs.com/package/csv-parser.
 
+In the header element you may refer to attributes of the resource indicated in the resourceName field. You can find these fields in the data catalogue: https://data.thetis-ims.com/en.
+
 #### encoding
 
 The encoding of the file.
@@ -108,11 +110,21 @@ The name of the entity that the file has been attached to.
 
 #### resourceName
 
-The name of the resource that the file contains records for.
+The name of the resource that the file contains records for. 
+
+# Special handling of trade items
+
+If the resourceName is equal to 'globalTradeItems', the application will check if a field by the name 'productGroupName' is present. If that is the case, the application will use the data from the line to create a product before creating the trade item. No message is attached to the file, if the product already exists.
+
+# Special handling of inbound shipment lines
+
+If the resourceName is equal to 'inboundShipmentLines', the application will check if a field by the name 'supplierNumber' is present. If that is the case, the application  will use the data from the line to create an inbound shipment before creating the inbound shipment line. No message is attached to the file, if the inbound shipment already exists.
 
 # Error handling
 
-If the processing of an event fails, the event object is moved to the dead letter queue and an email is sent to the address provided on installation.
+If the processing of an event fails for an unforeseen reason, the event object is moved to the dead letter queue and an email is sent to the address provided on installation.
+
+If the processing of a line fails, a message is attached to the file. You may view these messages from the Thetis IMS application. A line will for instance fail, if a record with the same key alreade exists.
 
 # Third party modules
 

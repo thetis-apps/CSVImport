@@ -165,7 +165,7 @@ exports.fileAttachedEventHandler = async (event, x) => {
         if (typeof setup.enrichment !== 'undefined') {
             for (let fn in setup.enrichment) {
                 let value = setup.enrichment[fn];
-                if (value.startsWith("$")) {
+                if (typeof value === 'string' && value.startsWith("$")) {
                     value = detail.data[value.substring(1)];   
                 } else {
                     value = setup.enrichment[fn];
@@ -220,9 +220,20 @@ exports.writer = async (event, x) => {
                 }
             }
     
+            // If inbound shipment line: Create inbound shipment
+    
+            if (metadata.resourceName == 'inboundShipmentLines' && data.hasOwnProperty('supplierNumber')) {
+                let response = await ims.post("inboundShipments", data);
+                if (response.status == 422) {
+                    if (response.data.messageCode != "duplicate_InboundShipment") {
+                        error(ims, metadata.eventId, response.data, metadata.lineNumber);
+                    }
+                }
+            }
+            
             // If trade items: Create product as well if not already existing
             
-            if (metadata.resourceName == 'globalTradeItems') {
+            if (metadata.resourceName == 'globalTradeItems' && data.hasOwnProperty('productGroupName')) {
               
                 let response = await ims.post("products", data);
                 if (response.status == 422) {
