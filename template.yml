@@ -117,7 +117,7 @@ Resources:
               Fn::GetAtt:
               - DispatchQueue
               - Arn
-      MemorySize: 256
+      MemorySize: 2048
       Timeout: 300
       ReservedConcurrentExecutions: 10
 

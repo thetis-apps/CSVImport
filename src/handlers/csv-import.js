@@ -176,9 +176,9 @@ exports.fileAttachedEventHandler = async (event, x) => {
         
         chunk.push(data);
         
-        // Make chunks of 50 lines for the writer
+        // Make chunks of 10 lines for the writer
         
-        if (i > 0 && i % 50 == 0) {
+        if (i > 0 && i % 10 == 0) {
             await sendSqs(chunk);
             chunk = [];
         } 
