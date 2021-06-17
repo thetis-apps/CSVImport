@@ -85,7 +85,7 @@ Resources:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/e553e923ae2cf9406b320654d375a938
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/5d79050d7e35dc7df9a779c0037c3536
   Writer:
     Type: AWS::Serverless::Function
     Properties:
@@ -115,7 +115,7 @@ Resources:
       MemorySize: 256
       Timeout: 300
       ReservedConcurrentExecutions: 10
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/e553e923ae2cf9406b320654d375a938
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/5d79050d7e35dc7df9a779c0037c3536
   DeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties: {}

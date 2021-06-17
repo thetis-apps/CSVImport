@@ -81,10 +81,12 @@ async function error(ims, eventId, data, lineNumber) {
 	await ims.post("events/" + eventId + "/messages", message);
 }
 
-async function sendSqs(chunk) {
+async function sendSqs(chunk, group, id) {
     var params = {
         MessageBody: JSON.stringify(chunk),
-        QueueUrl: process.env.DispatchQueue
+        QueueUrl: process.env.DispatchQueue,
+        MessageGroupId: group,
+        MessageDeduplicationId: id
     };
     await sqs.sendMessage(params).promise();
 }
@@ -176,15 +178,15 @@ exports.fileAttachedEventHandler = async (event, x) => {
         
         chunk.push(data);
         
-        // Make chunks of 50 lines for the writer
+        // One message for each line dispatched to 10 writers.
         
-        if (i > 0 && i % 50 == 0) {
-            await sendSqs(chunk);
-            chunk = [];
-        } 
+        await sendSqs(chunk, (i % 10).toString(), i.toString());
+        
+        chunk = [];
+        
     }
     
-    // Send remainder
+    // Send remainder 
     
     if (chunk.length > 0) {
         await sendSqs(chunk);
@@ -193,11 +195,13 @@ exports.fileAttachedEventHandler = async (event, x) => {
 }
 
 exports.writer = async (event, x) => {
+
+    console.log(JSON.stringify(event));
     
     let ims = await getIMS();
 
     // For each SQS message
-    
+
     let records = event.Records;
     for (let i = 0; i < records.length; i++) {
         let record = records[i];

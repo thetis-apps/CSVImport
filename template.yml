@@ -14,7 +14,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: ['thetis-ims']
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: 1.1.0
+    SemanticVersion: 1.2.0
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 
 # Parameters of the application 
@@ -45,12 +45,13 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       VisibilityTimeout: 360
+      FifoQueue: true
       RedrivePolicy:
         deadLetterTargetArn:
           Fn::GetAtt:
-          - DeadLetterQueue
+          - DispatchDeadLetterQueue
           - Arn
-        maxReceiveCount: 3
+        maxReceiveCount: 300
         
   FileAttachedEventHandler:
     Type: AWS::Serverless::Function
@@ -111,8 +112,6 @@ Resources:
         Request:
           Type: SQS
           Properties:
-            BatchSize: 10
-            MaximumBatchingWindowInSeconds: 10
             Queue: 
               Fn::GetAtt:
               - DispatchQueue
@@ -143,6 +142,31 @@ Resources:
         Value:
           Fn::GetAtt:
           - DeadLetterQueue
+          - QueueName
+      TreatMissingData: notBreaching
+      Statistic: Maximum
+  DispatchDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties: 
+      FifoQueue: true
+  Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Alarm when any message is moved to the dispatch dead letter queue.
+      AlarmActions:
+      - Ref: IncidentTopic
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: 1
+      MetricName: ApproximateNumberOfMessagesVisible
+      Period: 60
+      Namespace: AWS/SQS
+      Threshold: '0'
+      Unit: Count
+      Dimensions:
+      - Name: QueueName
+        Value:
+          Fn::GetAtt:
+          - DispatchDeadLetterQueue
           - QueueName
       TreatMissingData: notBreaching
       Statistic: Maximum
