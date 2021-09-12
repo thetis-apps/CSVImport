@@ -72,12 +72,14 @@ const parse = (inputStream, setup) => {
     });
 };
 
-async function error(ims, eventId, data, lineNumber) {
+async function error(ims, eventId, userId, deviceName, data, lineNumber) {
 	let message = new Object();
 	message.time = Date.now();
 	message.source = "CSVImport";
 	message.messageType = data.messageType;
 	message.messageText = "Line " + lineNumber + ": " + data.messageText;
+	message.userId = userId;
+	message.deviceName = deviceName;
 	await ims.post("events/" + eventId + "/messages", message);
 }
 
@@ -160,6 +162,8 @@ exports.fileAttachedEventHandler = async (event, x) => {
         metadata.lineNumber = i;
         metadata.resourceName = resourceName;
         metadata.eventId = detail.eventId;
+        metadata.deviceName = detail.deviceName;
+        metadata.userId = detail.userId;
         data.metadata = metadata;       
         
         // Further enrichment
@@ -180,7 +184,7 @@ exports.fileAttachedEventHandler = async (event, x) => {
         
         // One message for each line dispatched to 10 writers.
         
-        await sendSqs(chunk, (i % 10).toString(), i.toString());
+        await sendSqs(chunk, (i % 10).toString(), event.id + '#' + i.toString());
         
         chunk = [];
         
@@ -189,7 +193,7 @@ exports.fileAttachedEventHandler = async (event, x) => {
     // Send remainder 
     
     if (chunk.length > 0) {
-        await sendSqs(chunk);
+        await sendSqs(chunk, (i % 10).toString(), event.id + '#' + i.toString());
     }
 
 }
@@ -230,7 +234,7 @@ exports.writer = async (event, x) => {
                 let response = await ims.post("inboundShipments", data);
                 if (response.status == 422) {
                     if (response.data.messageCode != "duplicate_InboundShipment") {
-                        error(ims, metadata.eventId, response.data, metadata.lineNumber);
+                        await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
                     }
                 }
             }
@@ -242,7 +246,7 @@ exports.writer = async (event, x) => {
                 let response = await ims.post("products", data);
                 if (response.status == 422) {
                     if (response.data.messageCode != "duplicate_Product") {
-                        error(ims, metadata.eventId, response.data, metadata.lineNumber);
+                        await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
                     }
                 }
                 
@@ -290,7 +294,7 @@ exports.writer = async (event, x) => {
     
             let response = await ims.post(metadata.resourceName, data);
             if (response.status == 422) {
-                error(ims, metadata.eventId, response.data, metadata.lineNumber);
+                await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
             }
            
         }

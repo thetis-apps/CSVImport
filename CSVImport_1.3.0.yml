@@ -2,22 +2,19 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: Application for the import of CSV files to Thetis IMS
 Transform:
 - AWS::Serverless-2016-10-31
-
-# Metadata to use for the publishing to the SAR
 Metadata:
   AWS::ServerlessRepo::Application:
     Name: thetis-ims-csv-import
     Description: Application for import of CSV files to Thetis IMS
     Author: thetis-apps
     SpdxLicenseId: Apache-2.0
-    LicenseUrl: LICENSE.txt
-    ReadmeUrl: README.md
-    Labels: ['thetis-ims']
+    LicenseUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/4612b8d5aa75b9b9936c9b7b9e6c7e82
+    ReadmeUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/e8d0160832798906224f1ab8b32e6cf4
+    Labels:
+    - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
     SemanticVersion: 1.3.0
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
-
-# Parameters of the application 
 Parameters:
   ContextId:
     Type: String
@@ -35,13 +32,12 @@ Parameters:
     Type: String
     MinLength: 1
   DevOpsEmail:
-    Description: The email address to send mail to when messages in the dead letter queue.
+    Description: The email address to send mail to when messages in the dead letter
+      queue.
     Type: String
     MinLength: 4
-    
-Resources:  
-
-  DispatchQueue: 
+Resources:
+  DispatchQueue:
     Type: AWS::SQS::Queue
     Properties:
       VisibilityTimeout: 360
@@ -52,7 +48,6 @@ Resources:
           - DispatchDeadLetterQueue
           - Arn
         maxReceiveCount: 300
-        
   FileAttachedEventHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -91,7 +86,7 @@ Resources:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-          
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/8ff39c8f21d594183d7be1909f96b08b
   Writer:
     Type: AWS::Serverless::Function
     Properties:
@@ -112,47 +107,22 @@ Resources:
         Request:
           Type: SQS
           Properties:
-            Queue: 
+            Queue:
               Fn::GetAtt:
               - DispatchQueue
               - Arn
       MemorySize: 2048
       Timeout: 300
       ReservedConcurrentExecutions: 10
-
-  # Our standard monitoring setup      
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/8ff39c8f21d594183d7be1909f96b08b
   DeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties: {}
   Alarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmDescription: Alarm when any message is moved to the dead letter queue.
-      AlarmActions:
-      - Ref: IncidentTopic
-      ComparisonOperator: GreaterThanThreshold
-      EvaluationPeriods: 1
-      MetricName: ApproximateNumberOfMessagesVisible
-      Period: 60
-      Namespace: AWS/SQS
-      Threshold: '0'
-      Unit: Count
-      Dimensions:
-      - Name: QueueName
-        Value:
-          Fn::GetAtt:
-          - DeadLetterQueue
-          - QueueName
-      TreatMissingData: notBreaching
-      Statistic: Maximum
-  DispatchDeadLetterQueue:
-    Type: AWS::SQS::Queue
-    Properties: 
-      FifoQueue: true
-  Alarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmDescription: Alarm when any message is moved to the dispatch dead letter queue.
+      AlarmDescription: Alarm when any message is moved to the dispatch dead letter
+        queue.
       AlarmActions:
       - Ref: IncidentTopic
       ComparisonOperator: GreaterThanThreshold
@@ -170,10 +140,15 @@ Resources:
           - QueueName
       TreatMissingData: notBreaching
       Statistic: Maximum
+  DispatchDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      FifoQueue: true
   IncidentTopic:
     Type: AWS::SNS::Topic
     Properties:
       Subscription:
-      - Endpoint: !Ref DevOpsEmail
+      - Endpoint:
+          Ref: DevOpsEmail
         Protocol: email
       DisplayName: Incidents to be handled by Thetis Devops.
