@@ -9,7 +9,7 @@
         "iconv-lite": "^0.6.2",
         "neat-csv": "^6.0.1",
         "strip-bom-stream": "^4.0.0",
-        "xlsx": "^0.16.9"
+        "xlsx": "^0.17.0"
     },
     "devDependencies": {
         "aws-sdk": "^2.831.0",
