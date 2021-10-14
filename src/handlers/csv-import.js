@@ -291,12 +291,27 @@ exports.writer = async (event, x) => {
                 data.contactPerson = contactPerson;
     
             }
-    
+            
             let response = await ims.post(metadata.resourceName, data);
             if (response.status == 422) {
                 await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
-            }
+            } else {
            
+                let result = response.data;
+                
+                // If item lot: Do a stock taking 
+                
+                if (metadata.resourceName == 'globalTradeItemLots') {
+                    if (data.hasOwnProperty('numItems')) {
+                        response = await ims.post('invocations/countGlobalTradeItemLot', { numItemsCounted: data.numItems, globalTradeItemLotId: result.id, discrepancyCause: 'TRANSFERRED' });
+                        if (response.status == 422) {
+                            await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
+                        }                        
+                    }
+                }
+
+            }
+
         }
     }
     
