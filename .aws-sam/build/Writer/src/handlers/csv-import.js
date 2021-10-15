@@ -39,7 +39,7 @@ async function getIMS() {
     		baseURL: apiUrl,
     		headers: { "Authorization": token, "x-api-key": apiKey, "Content-Type": "application/json" },
     	    validateStatus: function (status) {
-		            return status >= 200 && status < 300 || status == 422; 
+		            return status >= 200 && status < 300 || status == 422 || status == 429; 
 		        }
     	});
 	
@@ -127,6 +127,11 @@ exports.fileAttachedEventHandler = async (event, x) => {
     let setup = setups[i];
     let options = setup.options;
     let resourceName = setup.resourceName;
+    
+    let numWriters = setup.numWriters;
+    if (numWriters === undefined) {
+        numWriters = 1;
+    }
 
     console.log(JSON.stringify(options));
 
@@ -154,13 +159,16 @@ exports.fileAttachedEventHandler = async (event, x) => {
     
     let chunk = [];
     for (let i = 0; i < results.length; i++) {
+        
         let data = results[i];
         
         // Enrich line with metadata
         
         let metadata = new Object();
         metadata.lineNumber = i;
+        metadata.numLines = results.length;
         metadata.resourceName = resourceName;
+        metadata.fileName = fileName;
         metadata.eventId = detail.eventId;
         metadata.deviceName = detail.deviceName;
         metadata.userId = detail.userId;
@@ -182,9 +190,7 @@ exports.fileAttachedEventHandler = async (event, x) => {
         
         chunk.push(data);
         
-        // One message for each line dispatched to 10 writers.
-        
-        await sendSqs(chunk, (i % 10).toString(), event.id + '#' + i.toString());
+        await sendSqs(chunk, (i % numWriters).toString(), event.id + '#' + i.toString());
         
         chunk = [];
         
@@ -193,7 +199,7 @@ exports.fileAttachedEventHandler = async (event, x) => {
     // Send remainder 
     
     if (chunk.length > 0) {
-        await sendSqs(chunk, (i % 10).toString(), event.id + '#' + i.toString());
+        await sendSqs(chunk, (i % numWriters).toString(), event.id + '#' + i.toString());
     }
 
 }
@@ -208,6 +214,7 @@ exports.writer = async (event, x) => {
 
     let records = event.Records;
     for (let i = 0; i < records.length; i++) {
+        
         let record = records[i];
         
         // For each line read from a file
@@ -232,7 +239,7 @@ exports.writer = async (event, x) => {
     
             if (metadata.resourceName == 'inboundShipmentLines' && data.hasOwnProperty('supplierNumber')) {
                 let response = await ims.post("inboundShipments", data);
-                if (response.status == 422) {
+                if (response.status == 422 || response.status == 429) {
                     if (response.data.messageCode != "duplicate_InboundShipment") {
                         await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
                     }
@@ -244,7 +251,7 @@ exports.writer = async (event, x) => {
             if (metadata.resourceName == 'globalTradeItems' && data.hasOwnProperty('productGroupName')) {
               
                 let response = await ims.post("products", data);
-                if (response.status == 422) {
+                if (response.status == 422 || response.status == 429) {
                     if (response.data.messageCode != "duplicate_Product") {
                         await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
                     }
@@ -293,23 +300,34 @@ exports.writer = async (event, x) => {
             }
             
             let response = await ims.post(metadata.resourceName, data);
-            if (response.status == 422) {
+            if (response.status == 422 || response.status == 429) {
                 await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
             } else {
            
                 let result = response.data;
                 
-                // If item lot: Do a stock taking 
+                // If item lot: Do a stock taking
                 
                 if (metadata.resourceName == 'globalTradeItemLots') {
                     if (data.hasOwnProperty('numItems')) {
                         response = await ims.post('invocations/countGlobalTradeItemLot', { numItemsCounted: data.numItems, globalTradeItemLotId: result.id, discrepancyCause: 'TRANSFERRED' });
-                        if (response.status == 422) {
+                        if (response.status == 422 || response.status == 429) {
                             await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
                         }                        
                     }
                 }
 
+            }
+
+            if (metadata.lineNumber == metadata.numLines - 1) {
+                let message = new Object();
+            	message.time = Date.now();
+            	message.source = "CSVImport";
+            	message.messageType = 'INFO';
+            	message.messageText = "Finished importing last line out of " + metadata.numLines + " lines from the attached file " + metadata.fileName;
+            	message.userId = metadata.userId;
+            	message.deviceName = metadata.deviceName;
+            	await ims.post("events/" + metadata.eventId + "/messages", message);
             }
 
         }

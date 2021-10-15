@@ -112,6 +112,12 @@ The name of the entity that the file has been attached to.
 
 The name of the resource that the file contains records for. 
 
+#### numWriters
+
+This setting allows you to parallise the writing of records to Thetis IMS. This may speed up the import considerably. However, you must be aware that by parallising the writing of records you may surpass your rate-limit. It that happens Thetis IMS will start to return status code 429.
+
+When the last line of a file has been imported, the application sends a message to the user who started the import. Be aware that the last line may not be the last to be imported, if you are using more than one writer. 
+
 # Special handling of trade items
 
 If the resourceName is equal to 'globalTradeItems', the application will check if a field by the name 'productGroupName' is present. If that is the case, the application will use the data from the line to create a product before creating the trade item. No message is attached to the file, if the product already exists.
