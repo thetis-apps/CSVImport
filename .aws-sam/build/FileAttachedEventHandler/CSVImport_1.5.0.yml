@@ -9,7 +9,7 @@ Metadata:
     Author: thetis-apps
     SpdxLicenseId: Apache-2.0
     LicenseUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/4612b8d5aa75b9b9936c9b7b9e6c7e82
-    ReadmeUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/fdcb4e4dcb985516c595824faaf073b0
+    ReadmeUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/6175e075f84a4c56394f82a716095bcb
     Labels:
     - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
@@ -86,7 +86,7 @@ Resources:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/9c5534201ac98891b23b054cdc16427f
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/0a4c80263c71b966f1be1b24abd5a1b3
   Writer:
     Type: AWS::Serverless::Function
     Properties:
@@ -114,7 +114,7 @@ Resources:
       MemorySize: 2048
       Timeout: 300
       ReservedConcurrentExecutions: 10
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/9c5534201ac98891b23b054cdc16427f
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/0a4c80263c71b966f1be1b24abd5a1b3
   DeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties: {}
