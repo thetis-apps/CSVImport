@@ -246,6 +246,21 @@ exports.writer = async (event, x) => {
                 }
             }
             
+            // If inbound shipment line: Do lookup item on GTIN if no SKU present
+            
+            if (metadata.resourceName == 'inboundShipmentLines' && !data.hasOwnProperty('stockKeepingUnit') && data.hasOwnProperty('globalTradeItemNumber')) {
+                let response = await ims.get("globalTradeItems", { params: { globalTradeItemNumberMatch: data.globalTradeItemNumber }});
+                if (response.status == 422 || response.status == 429) {
+                    await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
+                } else {
+                    let items = response.data;
+                    if (items.length > 0) {
+                        let item = items[0];
+                        data.globalTradeItemId = item.id;
+                    }
+                }
+            }
+
             // If trade items: Create product as well if not already existing
             
             if (metadata.resourceName == 'globalTradeItems' && data.hasOwnProperty('productGroupName')) {

@@ -126,6 +126,8 @@ If the resourceName is equal to 'globalTradeItems', the application will check i
 
 If the resourceName is equal to 'inboundShipmentLines', the application will check if a field by the name 'supplierNumber' is present. If that is the case, the application  will use the data from the line to create an inbound shipment before creating the inbound shipment line. No message is attached to the file, if the inbound shipment already exists.
 
+If no field by the name 'stockKeepingUnit' exists and a field by the name 'globalTradeItemNumber' exists, the application will lookup the item using the GTIN and use the SKU found.
+
 # Special handling of item lots
 
 If the resourceName is equal to 'globalTradeItemLots', the application will check if a field by the name 'numItems' is present. If that is the case, the application will do a count of the newly created item lot. 
