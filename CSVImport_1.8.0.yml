@@ -9,11 +9,11 @@ Metadata:
     Author: thetis-apps
     SpdxLicenseId: Apache-2.0
     LicenseUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/4612b8d5aa75b9b9936c9b7b9e6c7e82
-    ReadmeUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/fef8798cc87c9cc06bd5318ee5e7717c
+    ReadmeUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/cc41721d6a120c4745830857b2e825e8
     Labels:
     - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: '0.0.1'
+    SemanticVersion: 1.8.0
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 Parameters:
   ContextId:
@@ -40,7 +40,14 @@ Resources:
   DispatchQueue:
     Type: AWS::SQS::Queue
     Properties:
-      VisibilityTimeout: 300
+      VisibilityTimeout: 360
+      FifoQueue: true
+      RedrivePolicy:
+        deadLetterTargetArn:
+          Fn::GetAtt:
+          - DispatchDeadLetterQueue
+          - Arn
+        maxReceiveCount: 300
   FileAttachedEventHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -51,6 +58,12 @@ Resources:
       - AmazonSQSFullAccess
       Environment:
         Variables:
+          ClientId:
+            Ref: ClientId
+          ClientSecret:
+            Ref: ClientSecret
+          ApiKey:
+            Ref: ApiKey
           DispatchQueue:
             Ref: DispatchQueue
       Events:
@@ -63,19 +76,17 @@ Resources:
               detail-type:
               - fileAttached
               detail:
-                entityName:
-                - Metadata
                 contextId:
                 - Ref: ContextId
       MemorySize: 2048
-      Timeout: 300
+      Timeout: 900
       DeadLetterQueue:
         Type: SQS
         TargetArn:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/3b335fa22128bc05c13faf8ff9b4f76c
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/6f3a49d0f22cdfc9e5e3965f532e5624
   Writer:
     Type: AWS::Serverless::Function
     Properties:
@@ -96,29 +107,22 @@ Resources:
         Request:
           Type: SQS
           Properties:
-            BatchSize: 10
-            MaximumBatchingWindowInSeconds: 10
             Queue:
               Fn::GetAtt:
               - DispatchQueue
               - Arn
-      MemorySize: 256
+      MemorySize: 2048
       Timeout: 300
-      DeadLetterQueue:
-        Type: SQS
-        TargetArn:
-          Fn::GetAtt:
-          - DeadLetterQueue
-          - Arn
-      ReservedConcurrentExecutions: 5
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/3b335fa22128bc05c13faf8ff9b4f76c
+      ReservedConcurrentExecutions: 10
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/6f3a49d0f22cdfc9e5e3965f532e5624
   DeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties: {}
   Alarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmDescription: Alarm when any message is moved to the dead letter queue.
+      AlarmDescription: Alarm when any message is moved to the dispatch dead letter
+        queue.
       AlarmActions:
       - Ref: IncidentTopic
       ComparisonOperator: GreaterThanThreshold
@@ -132,10 +136,14 @@ Resources:
       - Name: QueueName
         Value:
           Fn::GetAtt:
-          - DeadLetterQueue
+          - DispatchDeadLetterQueue
           - QueueName
       TreatMissingData: notBreaching
       Statistic: Maximum
+  DispatchDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      FifoQueue: true
   IncidentTopic:
     Type: AWS::SNS::Topic
     Properties:

@@ -94,7 +94,7 @@ async function sendSqs(chunk, group, id) {
 }
 
 /**
- * A Lambda function that logs the payload received from a CloudWatch scheduled event.
+ * A Lambda function that handles a file attached to a piece of master data.
  */
 exports.fileAttachedEventHandler = async (event, x) => {
     
@@ -109,18 +109,39 @@ exports.fileAttachedEventHandler = async (event, x) => {
     let context = response.data;
     let dataDocument = JSON.parse(context.dataDocument);
     
+    let patterns = [];
     let setups = dataDocument.CSVImport;
     let found = false;
+    let entityNameFound = false;
     let i = 0;
     while (i < setups.length && !found) {
         let setup = setups[i];
-        if (entityName == setup.entityName && fileName.match(setup.fileNamePattern)) {
-            found = true;
+        if (entityName == setup.entityName) {
+            patterns.push(setup.fileNamePattern);
+            entityNameFound = true;
+            if (fileName.match(setup.fileNamePattern)) {
+                found = true;
+            } else {
+                i++;
+            }
         } else {
             i++;
         }
     }
+    
+    // If file name does not match a fileset we just return. If there are filesets defined for the entity we send a message.
+    
     if (!found) {
+        if (entityNameFound) {
+            let message = new Object();
+        	message.time = Date.now();
+        	message.source = "CSVImport";
+        	message.messageType = 'WARNING';
+        	message.messageText = 'File not imported as CSV because its name does not match any of the filesets defined. The filesets defined are: ' + patterns.toString();
+        	message.userId = detail.userId;
+        	message.deviceName = detail.deviceName;
+        	await ims.post("events/" + detail.eventId + "/messages", message);
+        }
         return "SKIP";
     }
 
