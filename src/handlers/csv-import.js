@@ -39,7 +39,7 @@ async function getIMS() {
     		baseURL: apiUrl,
     		headers: { "Authorization": token, "x-api-key": apiKey, "Content-Type": "application/json" },
     	    validateStatus: function (status) {
-		            return status >= 200 && status < 300 || status == 422 || status == 429; 
+		            return status >= 200 && status < 300 || status == 422; 
 		        }
     	});
 	
@@ -260,7 +260,7 @@ exports.writer = async (event, x) => {
     
             if (metadata.resourceName == 'inboundShipmentLines' && data.hasOwnProperty('supplierNumber')) {
                 let response = await ims.post("inboundShipments", data);
-                if (response.status == 422 || response.status == 429) {
+                if (response.status == 422) {
                     if (response.data.messageCode != "duplicate_InboundShipment") {
                         await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
                     }
@@ -271,7 +271,7 @@ exports.writer = async (event, x) => {
             
             if (metadata.resourceName == 'inboundShipmentLines' && !data.hasOwnProperty('stockKeepingUnit') && data.hasOwnProperty('globalTradeItemNumber')) {
                 let response = await ims.get("globalTradeItems", { params: { globalTradeItemNumberMatch: data.globalTradeItemNumber }});
-                if (response.status == 422 || response.status == 429) {
+                if (response.status == 422) {
                     await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
                 } else {
                     let items = response.data;
@@ -287,7 +287,7 @@ exports.writer = async (event, x) => {
             if (metadata.resourceName == 'globalTradeItems' && data.hasOwnProperty('productGroupName')) {
               
                 let response = await ims.post("products", data);
-                if (response.status == 422 || response.status == 429) {
+                if (response.status == 422) {
                     if (response.data.messageCode != "duplicate_Product") {
                         await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
                     }
@@ -336,7 +336,7 @@ exports.writer = async (event, x) => {
             }
             
             let response = await ims.post(metadata.resourceName, data);
-            if (response.status == 422 || response.status == 429) {
+            if (response.status == 422) {
                 await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
             } else {
            
@@ -347,7 +347,7 @@ exports.writer = async (event, x) => {
                 if (metadata.resourceName == 'globalTradeItemLots') {
                     if (data.hasOwnProperty('numItems')) {
                         response = await ims.post('invocations/countGlobalTradeItemLot', { numItemsCounted: data.numItems, globalTradeItemLotId: result.id, discrepancyCause: 'TRANSFERRED' });
-                        if (response.status == 422 || response.status == 429) {
+                        if (response.status == 422) {
                             await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
                         }                        
                     }
