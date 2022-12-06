@@ -13,7 +13,7 @@ Metadata:
     Labels:
     - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: 1.8.1
+    SemanticVersion: 1.8.2
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 Parameters:
   ContextId:
@@ -87,6 +87,8 @@ Resources:
           - DeadLetterQueue
           - Arn
       CodeUri: FileAttachedEventHandler
+    Metadata:
+      SamResourceId: FileAttachedEventHandler
   Writer:
     Type: AWS::Serverless::Function
     Properties:
@@ -115,6 +117,8 @@ Resources:
       Timeout: 300
       ReservedConcurrentExecutions: 10
       CodeUri: Writer
+    Metadata:
+      SamResourceId: Writer
   DeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties: {}
