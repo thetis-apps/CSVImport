@@ -13,7 +13,7 @@ Metadata:
     Labels:
     - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: 1.8.5
+    SemanticVersion: 1.8.6
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 Parameters:
   ContextId:
@@ -36,6 +36,9 @@ Parameters:
       queue.
     Type: String
     MinLength: 4
+Globals:
+  Function:
+    Runtime: nodejs16.x
 Resources:
   DispatchQueue:
     Type: AWS::SQS::Queue
@@ -53,7 +56,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Description: Function that runs when a CSV file is attached.
-      Runtime: nodejs12.x
       Handler: src/handlers/csv-import.fileAttachedEventHandler
       Policies:
       - AmazonSQSFullAccess
@@ -94,7 +96,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Description: Function POST data to Thetis IMS.
-      Runtime: nodejs12.x
       Handler: src/handlers/csv-import.writer
       Environment:
         Variables:
@@ -124,38 +125,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       KmsMasterKeyId: alias/aws/sqs
-  Alarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmDescription: Alarm when any message is moved to the dispatch dead letter
-        queue.
-      AlarmActions:
-      - Ref: IncidentTopic
-      ComparisonOperator: GreaterThanThreshold
-      EvaluationPeriods: 1
-      MetricName: ApproximateNumberOfMessagesVisible
-      Period: 60
-      Namespace: AWS/SQS
-      Threshold: '0'
-      Unit: Count
-      Dimensions:
-      - Name: QueueName
-        Value:
-          Fn::GetAtt:
-          - DispatchDeadLetterQueue
-          - QueueName
-      TreatMissingData: notBreaching
-      Statistic: Maximum
   DispatchDeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties:
       FifoQueue: true
-  IncidentTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      KmsMasterKeyId: alias/aws/sns
-      Subscription:
-      - Endpoint:
-          Ref: DevOpsEmail
-        Protocol: email
-      DisplayName: Incidents to be handled by Thetis Devops.

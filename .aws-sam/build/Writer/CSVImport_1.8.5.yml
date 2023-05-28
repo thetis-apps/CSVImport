@@ -13,7 +13,7 @@ Metadata:
     Labels:
     - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: 1.8.1
+    SemanticVersion: 1.8.5
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 Parameters:
   ContextId:
@@ -42,12 +42,15 @@ Resources:
     Properties:
       VisibilityTimeout: 360
       FifoQueue: true
+      KmsMasterKeyId: alias/aws/sqs
       RedrivePolicy:
         deadLetterTargetArn:
           Fn::GetAtt:
           - DispatchDeadLetterQueue
           - Arn
         maxReceiveCount: 300
+    Metadata:
+      SamResourceId: DispatchQueue
   FileAttachedEventHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -86,7 +89,9 @@ Resources:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/8c1d89055e8f8ed20a57de4d1e98ae21
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/e190482e1d045cd427410c5f2f1f57fe
+    Metadata:
+      SamResourceId: FileAttachedEventHandler
   Writer:
     Type: AWS::Serverless::Function
     Properties:
@@ -114,10 +119,15 @@ Resources:
       MemorySize: 2048
       Timeout: 300
       ReservedConcurrentExecutions: 10
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/8c1d89055e8f8ed20a57de4d1e98ae21
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/e190482e1d045cd427410c5f2f1f57fe
+    Metadata:
+      SamResourceId: Writer
   DeadLetterQueue:
     Type: AWS::SQS::Queue
-    Properties: {}
+    Properties:
+      KmsMasterKeyId: alias/aws/sqs
+    Metadata:
+      SamResourceId: DeadLetterQueue
   Alarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -140,15 +150,22 @@ Resources:
           - QueueName
       TreatMissingData: notBreaching
       Statistic: Maximum
+    Metadata:
+      SamResourceId: Alarm
   DispatchDeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties:
       FifoQueue: true
+    Metadata:
+      SamResourceId: DispatchDeadLetterQueue
   IncidentTopic:
     Type: AWS::SNS::Topic
     Properties:
+      KmsMasterKeyId: alias/aws/sns
       Subscription:
       - Endpoint:
           Ref: DevOpsEmail
         Protocol: email
       DisplayName: Incidents to be handled by Thetis Devops.
+    Metadata:
+      SamResourceId: IncidentTopic
