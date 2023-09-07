@@ -154,7 +154,7 @@ exports.fileAttachedEventHandler = async (event, x) => {
         numWriters = 1;
     }
 
-    console.log(JSON.stringify(options));
+    console.log('Options: ' + JSON.stringify(options));
 
     // Create stream - either from converted XLSX file or directly from CSV file
 
@@ -225,6 +225,123 @@ exports.fileAttachedEventHandler = async (event, x) => {
 
 }
 
+async function preInsert(ims, metadata, data) {
+    
+    // If inbound shipment line: Create inbound shipment
+
+    if (metadata.resourceName == 'inboundShipmentLines' && data.hasOwnProperty('supplierNumber')) {
+        let response = await ims.post("inboundShipments", data);
+        if (response.status == 422) {
+            if (response.data.messageCode != "duplicate_InboundShipment") {
+                await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
+            }
+        }
+    }
+    
+    // If inbound shipment line: Do lookup item on GTIN if no SKU present
+    
+    if (metadata.resourceName == 'inboundShipmentLines' && !data.hasOwnProperty('stockKeepingUnit') && data.hasOwnProperty('globalTradeItemNumber')) {
+        let response = await ims.get("globalTradeItems", { params: { globalTradeItemNumberMatch: data.globalTradeItemNumber }});
+        if (response.status == 422) {
+            await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
+        } else {
+            let items = response.data;
+            if (items.length > 0) {
+                let item = items[0];
+                data.globalTradeItemId = item.id;
+            }
+        }
+    }
+
+    // If trade items: Create product as well if not already existing
+    
+    if (metadata.resourceName == 'globalTradeItems' && data.hasOwnProperty('productGroupName')) {
+      
+        let response = await ims.post("products", data);
+        if (response.status == 422) {
+            if (response.data.messageCode != "duplicate_Product") {
+                await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
+            }
+        }
+        
+        let dimensions = new Object();
+        let productVariantKey = new Object();
+        for (const qfn in data) {
+            let tokens = qfn.split(".");
+            if (tokens.length == 2) {
+                let fn = tokens[1];
+                if (tokens[0] == 'productVariantKey') {
+                    productVariantKey[fn] = data[qfn];
+                } else if (tokens[0] == 'dimensions') {
+                    dimensions[fn] = data[qfn];
+                }
+                delete data[qfn];
+            }
+        } 
+        data.productVariantKey = productVariantKey;
+        data.dimensions = dimensions;
+        
+    }
+    
+    // If shipments: Handle delivery address and contact person
+    
+    if (metadata.resourceName == 'shipments') {
+        
+        let deliveryAddress = new Object();
+        let contactPerson = new Object();
+        for (const qfn in data) {
+            let tokens = qfn.split(".");
+            if (tokens.length == 2) {
+                let fn = tokens[1];
+                if (tokens[0] == 'deliveryAddress') {
+                    deliveryAddress[fn] = data[qfn];
+                } else if (tokens[0] == 'contactPerson') {
+                    contactPerson[fn] = data[qfn];
+                }
+                delete data[qfn];
+            }
+        } 
+        data.deliveryAddress = deliveryAddress;
+        data.contactPerson = contactPerson;
+
+    }
+    
+}
+
+async function postInsert(ims, metadata, data) {
+    
+    // If item lot: Do a stock taking
+    
+    if (metadata.resourceName == 'globalTradeItemLots') {
+        if (data.hasOwnProperty('numItems')) {
+            let response = await ims.post('invocations/countGlobalTradeItemLot', { numItemsCounted: data.numItems, globalTradeItemLotId: data.id, discrepancyCause: 'TRANSFERRED' });
+            if (response.status == 422) {
+                await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
+            }                        
+        }
+    }
+    
+}
+
+async function insert(ims, metadata, data) {
+    await preInsert(ims, metadata, data);
+    let response = await ims.post(metadata.resourceName, data);
+    if (response.status == 422) {
+        await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
+    } else {
+        let result = response.data;
+        await postInsert(ims, metadata, result);
+    }
+}
+
+async function update(ims, metadata, id, data) {
+    delete data.contextLocalKey;
+    let response = await ims.patch(metadata.resourceName + '/' + id, data);
+    if (response.status == 422) {
+        await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
+    }
+}
+
 exports.writer = async (event, x) => {
 
     console.log(JSON.stringify(event));
@@ -242,6 +359,7 @@ exports.writer = async (event, x) => {
         
         let results = JSON.parse(record.body);
         for (let j = 0; j < results.length; j++) {
+            
             let data = results[j];
             
             console.log(JSON.stringify(data));
@@ -255,106 +373,20 @@ exports.writer = async (event, x) => {
                     data[fn] = null;
                 }
             }
-    
-            // If inbound shipment line: Create inbound shipment
-    
-            if (metadata.resourceName == 'inboundShipmentLines' && data.hasOwnProperty('supplierNumber')) {
-                let response = await ims.post("inboundShipments", data);
-                if (response.status == 422) {
-                    if (response.data.messageCode != "duplicate_InboundShipment") {
-                        await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
-                    }
-                }
-            }
-            
-            // If inbound shipment line: Do lookup item on GTIN if no SKU present
-            
-            if (metadata.resourceName == 'inboundShipmentLines' && !data.hasOwnProperty('stockKeepingUnit') && data.hasOwnProperty('globalTradeItemNumber')) {
-                let response = await ims.get("globalTradeItems", { params: { globalTradeItemNumberMatch: data.globalTradeItemNumber }});
-                if (response.status == 422) {
-                    await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
-                } else {
-                    let items = response.data;
-                    if (items.length > 0) {
-                        let item = items[0];
-                        data.globalTradeItemId = item.id;
-                    }
-                }
-            }
 
-            // If trade items: Create product as well if not already existing
-            
-            if (metadata.resourceName == 'globalTradeItems' && data.hasOwnProperty('productGroupName')) {
-              
-                let response = await ims.post("products", data);
-                if (response.status == 422) {
-                    if (response.data.messageCode != "duplicate_Product") {
-                        await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
-                    }
-                }
-                
-                let dimensions = new Object();
-                let productVariantKey = new Object();
-                for (const qfn in data) {
-                    let tokens = qfn.split(".");
-                    if (tokens.length == 2) {
-                        let fn = tokens[1];
-                        if (tokens[0] == 'productVariantKey') {
-                            productVariantKey[fn] = data[qfn];
-                        } else if (tokens[0] == 'dimensions') {
-                            dimensions[fn] = data[qfn];
-                        }
-                        delete data[qfn];
-                    }
-                } 
-                data.productVariantKey = productVariantKey;
-                data.dimensions = dimensions;
-                
-            }
-            
-            // If shipments: Handle delivery address and contact person
-            
-            if (metadata.resourceName == 'shipments') {
-                
-                let deliveryAddress = new Object();
-                let contactPerson = new Object();
-                for (const qfn in data) {
-                    let tokens = qfn.split(".");
-                    if (tokens.length == 2) {
-                        let fn = tokens[1];
-                        if (tokens[0] == 'deliveryAddress') {
-                            deliveryAddress[fn] = data[qfn];
-                        } else if (tokens[0] == 'contactPerson') {
-                            contactPerson[fn] = data[qfn];
-                        }
-                        delete data[qfn];
-                    }
-                } 
-                data.deliveryAddress = deliveryAddress;
-                data.contactPerson = contactPerson;
-    
-            }
-            
-            let response = await ims.post(metadata.resourceName, data);
-            if (response.status == 422) {
-                await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
-            } else {
-           
+            if (data.contextLocalKey != null) {
+                let response = await ims.get(metadata.resourceName, { params: { contextLocalKey: data.contextLocalKey }});
                 let result = response.data;
-                
-                // If item lot: Do a stock taking
-                
-                if (metadata.resourceName == 'globalTradeItemLots') {
-                    if (data.hasOwnProperty('numItems')) {
-                        response = await ims.post('invocations/countGlobalTradeItemLot', { numItemsCounted: data.numItems, globalTradeItemLotId: result.id, discrepancyCause: 'TRANSFERRED' });
-                        if (response.status == 422) {
-                            await error(ims, metadata.eventId, metadata.userId, metadata.deviceName, response.data, metadata.lineNumber);
-                        }                        
-                    }
+                if (result.length == 0) {
+                    await insert(ims, metadata, data);
+                } else {
+                    let dto = result[0];
+                    await update(ims, metadata, dto.id, data);
                 }
-
+            } else {
+                await insert(ims, metadata, data);
             }
-
+            
             if (metadata.lineNumber == metadata.numLines - 1) {
                 let message = new Object();
             	message.time = Date.now();

@@ -14,7 +14,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: ['thetis-ims']
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: 1.8.6
+    SemanticVersion: 1.9.0
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 
 # Parameters of the application 

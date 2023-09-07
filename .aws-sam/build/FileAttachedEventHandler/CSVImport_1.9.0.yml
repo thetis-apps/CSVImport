@@ -13,7 +13,7 @@ Metadata:
     Labels:
     - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: 1.8.1
+    SemanticVersion: 1.9
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 Parameters:
   ContextId:
@@ -36,23 +36,28 @@ Parameters:
       queue.
     Type: String
     MinLength: 4
+Globals:
+  Function:
+    Runtime: nodejs16.x
 Resources:
   DispatchQueue:
     Type: AWS::SQS::Queue
     Properties:
       VisibilityTimeout: 360
       FifoQueue: true
+      KmsMasterKeyId: alias/aws/sqs
       RedrivePolicy:
         deadLetterTargetArn:
           Fn::GetAtt:
           - DispatchDeadLetterQueue
           - Arn
         maxReceiveCount: 300
+    Metadata:
+      SamResourceId: DispatchQueue
   FileAttachedEventHandler:
     Type: AWS::Serverless::Function
     Properties:
       Description: Function that runs when a CSV file is attached.
-      Runtime: nodejs12.x
       Handler: src/handlers/csv-import.fileAttachedEventHandler
       Policies:
       - AmazonSQSFullAccess
@@ -86,12 +91,13 @@ Resources:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/8c1d89055e8f8ed20a57de4d1e98ae21
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/07cffc207385cd76c7f4f0ff87c9f771
+    Metadata:
+      SamResourceId: FileAttachedEventHandler
   Writer:
     Type: AWS::Serverless::Function
     Properties:
       Description: Function POST data to Thetis IMS.
-      Runtime: nodejs12.x
       Handler: src/handlers/csv-import.writer
       Environment:
         Variables:
@@ -114,41 +120,18 @@ Resources:
       MemorySize: 2048
       Timeout: 300
       ReservedConcurrentExecutions: 10
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/8c1d89055e8f8ed20a57de4d1e98ae21
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/07cffc207385cd76c7f4f0ff87c9f771
+    Metadata:
+      SamResourceId: Writer
   DeadLetterQueue:
     Type: AWS::SQS::Queue
-    Properties: {}
-  Alarm:
-    Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmDescription: Alarm when any message is moved to the dispatch dead letter
-        queue.
-      AlarmActions:
-      - Ref: IncidentTopic
-      ComparisonOperator: GreaterThanThreshold
-      EvaluationPeriods: 1
-      MetricName: ApproximateNumberOfMessagesVisible
-      Period: 60
-      Namespace: AWS/SQS
-      Threshold: '0'
-      Unit: Count
-      Dimensions:
-      - Name: QueueName
-        Value:
-          Fn::GetAtt:
-          - DispatchDeadLetterQueue
-          - QueueName
-      TreatMissingData: notBreaching
-      Statistic: Maximum
+      KmsMasterKeyId: alias/aws/sqs
+    Metadata:
+      SamResourceId: DeadLetterQueue
   DispatchDeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties:
       FifoQueue: true
-  IncidentTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      Subscription:
-      - Endpoint:
-          Ref: DevOpsEmail
-        Protocol: email
-      DisplayName: Incidents to be handled by Thetis Devops.
+    Metadata:
+      SamResourceId: DispatchDeadLetterQueue
