@@ -13,6 +13,136 @@ AWS.config.update({region:'eu-west-1'});
 
 var sqs = new AWS.SQS({apiVersion: '2012-11-05'});
 
+/**
+ * Send a response to CloudFormation regarding progress in creating resource.
+ */
+async function sendResponse(input, context, responseStatus, reason) {
+
+	let responseUrl = input.ResponseURL;
+
+	let output = new Object();
+	output.Status = responseStatus;
+	output.PhysicalResourceId = "StaticFiles";
+	output.StackId = input.StackId;
+	output.RequestId = input.RequestId;
+	output.LogicalResourceId = input.LogicalResourceId;
+	output.Reason = reason;
+	await axios.put(responseUrl, output);
+}
+
+async function convertSetupToObject(ims) {
+	let response = await ims.get('contexts/' + process.env.ContextId);
+	let context = response.data;
+	let dataDocument = JSON.parse(context.dataDocument);
+	let setup = dataDocument.CSVImport;
+    if (Array.isArray(setup)) {
+        let filesets = setup;
+        await ims.patch('contexts/' + process.env.ContextId + '/dataDocument', { CSVImport: { filesets: filesets }});
+    }
+}
+
+var dataSchema = {
+  "type": "object",
+  "properties": {
+    "filesets": {
+      "type": "array",
+      "title": "Filesets",
+      "items": [
+        {
+          "type": "object",
+          "title": "Fileset",
+          "properties": {
+            "options": {
+              "type": "object",
+              "title": "Options",
+              "properties": {
+                "headers": {
+                  "type": "array",
+                  "title": "Headers",
+                  "items": [
+                    {
+                      "type": "string",
+                      "title": "Fieldname"
+                    }
+                  ]
+                },
+                "separator": {
+                  "type": "string",
+                  "title": "Separator"
+                }
+              }
+            },
+            "encoding": {
+              "type": "string",
+              "title": "Encoding"
+            },
+            "entityName": {
+              "type": "string",
+              "title": "Entity name"
+            },
+            "resourceName": {
+              "type": "string",
+              "title": "Resource name"
+            },
+            "fileNamePattern": {
+              "type": "string",
+              "title": "Filename pattern"
+            }
+          }
+        }
+      ]
+    }
+  }
+};
+
+exports.initializer = async (input, context) => {
+	
+	try {
+		let ims = await getIMS();
+		let requestType = input.RequestType;
+		if (requestType == "Create") {
+			
+			// Create a data extension to the context entity
+
+			let dataExtension = { entityName: 'context', dataExtensionName: 'CSVImport', dataSchema: JSON.stringify(dataSchema) };
+			await ims.post('dataExtensions', dataExtension);
+			
+		} else if (requestType == 'Update') {
+			
+			// Update the data extension to the seller entity
+			
+			let response = await ims.get('dataExtensions');
+			let dataExtensions = response.data;
+			let found = false;
+			let i = 0;
+			while (i < dataExtensions.length && !found) {
+				let dataExtension = dataExtensions[i];
+				if (dataExtension.entityName == 'context' && dataExtension.dataExtensionName == 'CSVImport') {
+					found = true;
+				} else {
+					i++;
+				}
+			}
+			if (found) {
+				let dataExtension = dataExtensions[i];
+				await ims.patch('dataExtensions/' + dataExtension.id, { dataSchema: JSON.stringify(dataSchema) });
+			} else {
+				let dataExtension = { entityName: 'context', dataExtensionName: 'CSVImport', dataSchema: JSON.stringify(dataSchema) };
+				await ims.post('dataExtensions', dataExtension);
+			}
+			
+
+		}
+		
+		await convertSetupToObject(ims);
+			
+		await sendResponse(input, context, "SUCCESS", "OK");
+
+	} catch (error) {
+		await sendResponse(input, context, "SUCCESS", JSON.stringify(error));
+	}
+
+};
 
 async function getIMS() {
 	
@@ -57,10 +187,10 @@ async function getIMS() {
 	return ims;
 }
 
-const parse = (inputStream, setup) => {
+const parse = (inputStream, fileset) => {
     return new Promise((resolve, reject) => {
             let results = [];
-            inputStream.pipe(stripBom()).pipe(iconv.decodeStream(setup.encoding)).pipe(csvParser(setup.options))
+            inputStream.pipe(stripBom()).pipe(iconv.decodeStream(fileset.encoding)).pipe(csvParser(fileset.options))
             .on('data', (data) => {
                 console.log("data " + JSON.stringify(data));
                 results.push(data);
@@ -108,18 +238,21 @@ exports.fileAttachedEventHandler = async (event, x) => {
     let response = await ims.get("contexts/" + detail.contextId);
     let context = response.data;
     let dataDocument = JSON.parse(context.dataDocument);
+    let setup = dataDocument.CSVImport;
     
+    // Find a matching pattern
+
+    let filesets = setup.filesets;
     let patterns = [];
-    let setups = dataDocument.CSVImport;
     let found = false;
     let entityNameFound = false;
     let i = 0;
-    while (i < setups.length && !found) {
-        let setup = setups[i];
-        if (entityName == setup.entityName) {
-            patterns.push(setup.fileNamePattern);
+    while (i < filesets.length && !found) {
+        let fileset = filesets[i];
+        if (entityName == fileset.entityName) {
+            patterns.push(fileset.fileNamePattern);
             entityNameFound = true;
-            if (fileName.match(setup.fileNamePattern)) {
+            if (fileName.match(fileset.fileNamePattern)) {
                 found = true;
             } else {
                 i++;
@@ -145,11 +278,11 @@ exports.fileAttachedEventHandler = async (event, x) => {
         return "SKIP";
     }
 
-    let setup = setups[i];
-    let options = setup.options;
-    let resourceName = setup.resourceName;
+    let fileset = filesets[i];
+    let options = fileset.options;
+    let resourceName = fileset.resourceName;
     
-    let numWriters = setup.numWriters;
+    let numWriters = fileset.numWriters;
     if (numWriters === undefined) {
         numWriters = 1;
     }
@@ -172,7 +305,7 @@ exports.fileAttachedEventHandler = async (event, x) => {
     
     console.log("Got stream");
     
-    let results = await parse(stream, setup);  
+    let results = await parse(stream, fileset);  
     
     console.log("Got result " + JSON.stringify(results));
 
@@ -197,13 +330,13 @@ exports.fileAttachedEventHandler = async (event, x) => {
         
         // Further enrichment
         
-        if (typeof setup.enrichment !== 'undefined') {
-            for (let fn in setup.enrichment) {
-                let value = setup.enrichment[fn];
+        if (typeof fileset.enrichment !== 'undefined') {
+            for (let fn in fileset.enrichment) {
+                let value = fileset.enrichment[fn];
                 if (typeof value === 'string' && value.startsWith("$")) {
                     value = detail.data[value.substring(1)];   
                 } else {
-                    value = setup.enrichment[fn];
+                    value = fileset.enrichment[fn];
                 }
                 data[fn] = value;
             }

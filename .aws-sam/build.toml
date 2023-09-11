@@ -8,6 +8,6 @@ architecture = "x86_64"
 handler = "src/handlers/csv-import.fileAttachedEventHandler"
 manifest_hash = ""
 packagetype = "Zip"
-functions = ["FileAttachedEventHandler", "Writer"]
+functions = ["InitializeFunction", "FileAttachedEventHandler", "Writer"]
 
 [layer_build_definitions]
