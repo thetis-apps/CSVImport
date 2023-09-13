@@ -8,12 +8,12 @@ Metadata:
     Description: Application for import of CSV files to Thetis IMS
     Author: thetis-apps
     SpdxLicenseId: Apache-2.0
-    LicenseUrl: ../../LICENSE.txt
-    ReadmeUrl: ../../README.md
+    LicenseUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/4612b8d5aa75b9b9936c9b7b9e6c7e82
+    ReadmeUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/cc41721d6a120c4745830857b2e825e8
     Labels:
     - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: 2.0.1
+    SemanticVersion: 2.0.0
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 Parameters:
   ContextId:
@@ -48,6 +48,8 @@ Resources:
         - InitializeFunction
         - Arn
       Version: 11
+    Metadata:
+      SamResourceId: InitResource
   InitializeFunction:
     Type: AWS::Serverless::Function
     DeletionPolicy: Delete
@@ -65,7 +67,7 @@ Resources:
             Ref: ApiKey
           ContextId:
             Ref: ContextId
-      CodeUri: InitializeFunction
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/916cf7491fb5e4f56671b444d0bea27a
     Metadata:
       SamResourceId: InitializeFunction
   DispatchQueue:
@@ -80,6 +82,8 @@ Resources:
           - DispatchDeadLetterQueue
           - Arn
         maxReceiveCount: 300
+    Metadata:
+      SamResourceId: DispatchQueue
   FileAttachedEventHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -117,7 +121,7 @@ Resources:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-      CodeUri: FileAttachedEventHandler
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/916cf7491fb5e4f56671b444d0bea27a
     Metadata:
       SamResourceId: FileAttachedEventHandler
   Writer:
@@ -146,14 +150,18 @@ Resources:
       MemorySize: 2048
       Timeout: 300
       ReservedConcurrentExecutions: 10
-      CodeUri: Writer
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/916cf7491fb5e4f56671b444d0bea27a
     Metadata:
       SamResourceId: Writer
   DeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties:
       KmsMasterKeyId: alias/aws/sqs
+    Metadata:
+      SamResourceId: DeadLetterQueue
   DispatchDeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties:
       FifoQueue: true
+    Metadata:
+      SamResourceId: DispatchDeadLetterQueue
