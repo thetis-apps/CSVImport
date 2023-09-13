@@ -2,22 +2,19 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: Application for the import of CSV files to Thetis IMS
 Transform:
 - AWS::Serverless-2016-10-31
-
-# Metadata to use for the publishing to the SAR
 Metadata:
   AWS::ServerlessRepo::Application:
     Name: thetis-ims-csv-import
     Description: Application for import of CSV files to Thetis IMS
     Author: thetis-apps
     SpdxLicenseId: Apache-2.0
-    LicenseUrl: LICENSE.txt
-    ReadmeUrl: README.md
-    Labels: ['thetis-ims']
+    LicenseUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/4612b8d5aa75b9b9936c9b7b9e6c7e82
+    ReadmeUrl: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/cc41721d6a120c4745830857b2e825e8
+    Labels:
+    - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
     SemanticVersion: 2.0.3
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
-
-# Parameters of the application 
 Parameters:
   ContextId:
     Type: String
@@ -35,17 +32,14 @@ Parameters:
     Type: String
     MinLength: 1
   DevOpsEmail:
-    Description: The email address to send mail to when messages in the dead letter queue.
+    Description: The email address to send mail to when messages in the dead letter
+      queue.
     Type: String
     MinLength: 4
-    
 Globals:
   Function:
     Runtime: nodejs16.x
-    
-Resources:  
-
-  # Initialisation of CSVImport integration in context        
+Resources:
   InitResource:
     Type: AWS::CloudFormation::CustomResource
     Properties:
@@ -54,6 +48,8 @@ Resources:
         - InitializeFunction
         - Arn
       Version: 11
+    Metadata:
+      SamResourceId: InitResource
   InitializeFunction:
     Type: AWS::Serverless::Function
     DeletionPolicy: Delete
@@ -71,8 +67,10 @@ Resources:
             Ref: ApiKey
           ContextId:
             Ref: ContextId
-            
-  DispatchQueue: 
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/665a2184626c617e0bb6d7e7abba93c2
+    Metadata:
+      SamResourceId: InitializeFunction
+  DispatchQueue:
     Type: AWS::SQS::Queue
     Properties:
       VisibilityTimeout: 360
@@ -84,7 +82,8 @@ Resources:
           - DispatchDeadLetterQueue
           - Arn
         maxReceiveCount: 300
-        
+    Metadata:
+      SamResourceId: DispatchQueue
   FileAttachedEventHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -122,7 +121,9 @@ Resources:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-          
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/665a2184626c617e0bb6d7e7abba93c2
+    Metadata:
+      SamResourceId: FileAttachedEventHandler
   Writer:
     Type: AWS::Serverless::Function
     Properties:
@@ -142,20 +143,25 @@ Resources:
         Request:
           Type: SQS
           Properties:
-            Queue: 
+            Queue:
               Fn::GetAtt:
               - DispatchQueue
               - Arn
       MemorySize: 2048
       Timeout: 300
       ReservedConcurrentExecutions: 10
-
-  # Our standard monitoring setup      
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/665a2184626c617e0bb6d7e7abba93c2
+    Metadata:
+      SamResourceId: Writer
   DeadLetterQueue:
     Type: AWS::SQS::Queue
-    Properties: 
+    Properties:
       KmsMasterKeyId: alias/aws/sqs
+    Metadata:
+      SamResourceId: DeadLetterQueue
   DispatchDeadLetterQueue:
     Type: AWS::SQS::Queue
-    Properties: 
+    Properties:
       FifoQueue: true
+    Metadata:
+      SamResourceId: DispatchDeadLetterQueue
