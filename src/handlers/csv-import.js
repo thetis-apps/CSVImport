@@ -242,7 +242,7 @@ exports.fileAttachedEventHandler = async (event, x) => {
     
     // Find a matching pattern
 
-    let filesets = setup.filesets;
+    let filesets = setup;
     let patterns = [];
     let found = false;
     let entityNameFound = false;
@@ -356,7 +356,7 @@ exports.fileAttachedEventHandler = async (event, x) => {
         await sendSqs(chunk, (i % numWriters).toString(), event.id + '#' + i.toString());
     }
 
-}
+};
 
 async function preInsert(ims, metadata, data) {
     
@@ -534,4 +534,4 @@ exports.writer = async (event, x) => {
         }
     }
     
-}
+};
