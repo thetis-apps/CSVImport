@@ -185,6 +185,14 @@ exports.fileAttachedEventHandler = async (event, x) => {
         
         let data = results[i];
         
+        // Remove fields that were not mapped
+        
+        for (let fieldName in data) {
+            if (fieldName.startsWith('_')) {
+                delete data[fieldName];
+            }
+        }
+        
         // Enrich line with metadata
         
         let metadata = new Object();
@@ -224,6 +232,17 @@ exports.fileAttachedEventHandler = async (event, x) => {
     if (chunk.length > 0) {
         await sendSqs(chunk, (i % numWriters).toString(), event.id + '#' + i.toString());
     }
+
+    // Let the user know that import has started
+
+    let message = new Object();
+	message.time = Date.now();
+	message.source = "CSVImport";
+	message.messageType = 'INFO';
+	message.messageText = "Started importing " + results.length + " lines from the attached file " + fileName;
+	message.userId = detail.userId;
+	message.deviceName = detail.deviceName;
+	await ims.post("events/" + detail.eventId + "/messages", message);
 
 };
 
