@@ -97,10 +97,13 @@ async function sendSqs(chunk, group, id) {
  */
 exports.fileAttachedEventHandler = async (event, x) => {
     
+    console.log(JSON.stringify(event));
+    
     let detail = event.detail;
     let presignedUrl = detail.url;
     let entityName = detail.entityName;
     let fileName = detail.fileName;
+    let userId = detail.userId;
     
     let ims = await getIMS();
     
@@ -140,7 +143,7 @@ exports.fileAttachedEventHandler = async (event, x) => {
         	message.source = "CSVImport";
         	message.messageType = 'WARNING';
         	message.messageText = 'File not imported as CSV because its name does not match any of the filesets defined. The filesets defined are: ' + patterns.toString();
-        	message.userId = detail.userId;
+        	message.userId = userId;
         	message.deviceName = detail.deviceName;
         	await ims.post("events/" + detail.eventId + "/messages", message);
         }
@@ -202,7 +205,7 @@ exports.fileAttachedEventHandler = async (event, x) => {
         metadata.fileName = fileName;
         metadata.eventId = detail.eventId;
         metadata.deviceName = detail.deviceName;
-        metadata.userId = detail.userId;
+        metadata.userId = userId;
         data.metadata = metadata;       
         
         // Further enrichment
@@ -240,8 +243,12 @@ exports.fileAttachedEventHandler = async (event, x) => {
 	message.source = "CSVImport";
 	message.messageType = 'INFO';
 	message.messageText = "Started importing " + results.length + " lines from the attached file " + fileName;
-	message.userId = detail.userId;
+	message.userId = userId;
 	message.deviceName = detail.deviceName;
+	
+	            	
+	console.log(JSON.stringify(message));
+
 	await ims.post("events/" + detail.eventId + "/messages", message);
 
 };
