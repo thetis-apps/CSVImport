@@ -110,6 +110,9 @@ exports.fileAttachedEventHandler = async (event, x) => {
     let response = await ims.get("contexts/" + detail.contextId);
     let context = response.data;
     let dataDocument = JSON.parse(context.dataDocument);
+    
+    console.log("Parsed data document: " + JSON.stringify(dataDocument));
+    
     let setup = dataDocument.CSVImport;
     
     // Find a matching pattern
@@ -133,6 +136,8 @@ exports.fileAttachedEventHandler = async (event, x) => {
             i++;
         }
     }
+    
+    console.log("Searched for a matching pattern: " + found);
     
     // If file name does not match a fileset we just return. If there are filesets defined for the entity we send a message.
     
