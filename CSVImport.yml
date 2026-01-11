@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: 2010-09-09
+AWSTemplateFormatVersion: '2010-09-09'
 Description: Application for the import of CSV files to Thetis IMS
 Transform:
 - AWS::Serverless-2016-10-31
@@ -13,7 +13,7 @@ Metadata:
     Labels:
     - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: 2.2.5
+    SemanticVersion: 2.3.1
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 Parameters:
   ContextId:
@@ -38,7 +38,7 @@ Parameters:
     MinLength: 4
 Globals:
   Function:
-    Runtime: nodejs16.x
+    Runtime: nodejs24.x
 Resources:
   DispatchQueue:
     Type: AWS::SQS::Queue
@@ -91,7 +91,7 @@ Resources:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/768ef3bf94f5626bfb9bb1707f0226a4
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/69349a06c792b38484f32b7f0d088d31
     Metadata:
       SamResourceId: FileAttachedEventHandler
   Writer:
@@ -120,7 +120,7 @@ Resources:
       MemorySize: 2048
       Timeout: 300
       ReservedConcurrentExecutions: 10
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/768ef3bf94f5626bfb9bb1707f0226a4
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/69349a06c792b38484f32b7f0d088d31
     Metadata:
       SamResourceId: Writer
   DeadLetterQueue:

@@ -14,7 +14,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: ['thetis-ims']
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: 2.3.0
+    SemanticVersion: 2.3.1
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 
 # Parameters of the application 
@@ -41,7 +41,7 @@ Parameters:
     
 Globals:
   Function:
-    Runtime: nodejs16.x
+    Runtime: nodejs24.x
     
 Resources:  
 
