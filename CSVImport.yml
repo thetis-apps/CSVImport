@@ -13,7 +13,7 @@ Metadata:
     Labels:
     - thetis-ims
     HomePageUrl: https://github.com/thetis-apps/CSVImport
-    SemanticVersion: 2.3.1
+    SemanticVersion: 2.3.3
     SourceCodeUrl: https://github.com/thetis-apps/CSVImport
 Parameters:
   ContextId:
@@ -91,7 +91,7 @@ Resources:
           Fn::GetAtt:
           - DeadLetterQueue
           - Arn
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/69349a06c792b38484f32b7f0d088d31
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/d2dd760335b4f4f1837a2ae143ab3117
     Metadata:
       SamResourceId: FileAttachedEventHandler
   Writer:
@@ -120,7 +120,7 @@ Resources:
       MemorySize: 2048
       Timeout: 300
       ReservedConcurrentExecutions: 10
-      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/69349a06c792b38484f32b7f0d088d31
+      CodeUri: s3://aws-sam-cli-managed-default-samclisourcebucket-1q52gionhjeg3/d2dd760335b4f4f1837a2ae143ab3117
     Metadata:
       SamResourceId: Writer
   DeadLetterQueue:

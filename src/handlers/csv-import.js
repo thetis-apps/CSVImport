@@ -4,14 +4,12 @@ const csvParser = require('csv-parser');
 
 const stripBom = require('strip-bom-stream');
 
-var iconv = require('iconv-lite');
+const iconv = require('iconv-lite');
 
-var XLSX = require('xlsx');
+const XLSX = require('xlsx');
 
-var AWS = require('aws-sdk');
-AWS.config.update({region:'eu-west-1'});
-
-var sqs = new AWS.SQS({apiVersion: '2012-11-05'});
+const { SQS } = require("@aws-sdk/client-sqs");
+const sqs = new SQS({ region: 'eu-west-1' });
 
 let cachedIms = null;
 
