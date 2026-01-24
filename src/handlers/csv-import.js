@@ -95,7 +95,7 @@ async function sendSqs(chunk, group, id) {
         MessageGroupId: group,
         MessageDeduplicationId: id
     };
-    await sqs.sendMessage(params).promise();
+    await sqs.sendMessage(params);
 }
 
 /**
